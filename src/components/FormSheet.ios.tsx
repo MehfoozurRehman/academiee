@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   BottomSheet,
   Button,
@@ -8,6 +9,7 @@ import {
   Section,
   Text,
   TextField,
+  useNativeState,
 } from "@expo/ui/swift-ui";
 import {
   bold,
@@ -17,7 +19,7 @@ import {
   textInputAutocapitalization,
   tint,
 } from "@expo/ui/swift-ui/modifiers";
-import type { FormSheetProps } from "./FormSheet.types";
+import type { FormField, FormSheetProps } from "./FormSheet.types";
 
 const ACCENT = "#5B4BE8";
 
@@ -26,6 +28,40 @@ const CAPITALIZATION = {
   sentences: "sentences",
   words: "words",
 } as const;
+
+function NativeField({
+  field,
+  initial,
+  onChange,
+}: {
+  field: FormField;
+  initial: string;
+  onChange: (text: string) => void;
+}) {
+  const state = useNativeState(initial);
+
+  useEffect(() => {
+    if (state.get() !== initial) state.set(initial);
+  }, []);
+
+  if (field.secure) {
+    return (
+      <SecureField text={state} placeholder={field.label} onTextChange={onChange} />
+    );
+  }
+
+  return (
+    <TextField
+      text={state}
+      placeholder={field.label}
+      onTextChange={onChange}
+      modifiers={[
+        keyboardType(field.keyboard ?? "default"),
+        textInputAutocapitalization(CAPITALIZATION[field.autoCapitalize ?? "sentences"]),
+      ]}
+    />
+  );
+}
 
 export function FormSheet({
   open,
@@ -50,28 +86,15 @@ export function FormSheet({
         }}
       >
         <Form modifiers={[frame({ minHeight: 460 })]}>
-          <Section title={title}>
-            {fields.map((field) =>
-              field.secure ? (
-                <SecureField
-                  key={field.key}
-                  placeholder={field.label}
-                  onTextChange={(text) => onChange(field.key, text)}
-                />
-              ) : (
-                <TextField
-                  key={field.key}
-                  placeholder={field.label}
-                  onTextChange={(text) => onChange(field.key, text)}
-                  modifiers={[
-                    keyboardType(field.keyboard ?? "default"),
-                    textInputAutocapitalization(
-                      CAPITALIZATION[field.autoCapitalize ?? "sentences"]
-                    ),
-                  ]}
-                />
-              )
-            )}
+          <Section title={title} footer={note ? <Text>{note}</Text> : undefined}>
+            {fields.map((field) => (
+              <NativeField
+                key={`${field.key}-${open}`}
+                field={field}
+                initial={values[field.key] ?? ""}
+                onChange={(text) => onChange(field.key, text)}
+              />
+            ))}
           </Section>
 
           {choices.map((choice) => (
@@ -94,15 +117,9 @@ export function FormSheet({
             </Section>
           ) : null}
 
-          {note ? (
-            <Section>
-              <Text modifiers={[foregroundColor("#8E8E93")]}>{note}</Text>
-            </Section>
-          ) : null}
-
           <Section>
             <Button
-              label={busy ? "Saving\u2026" : submitLabel}
+              label={busy ? "Saving…" : submitLabel}
               modifiers={[tint(ACCENT), bold()]}
               onPress={() => {
                 if (!busy) onSubmit();
