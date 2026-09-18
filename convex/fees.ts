@@ -1,114 +1,186 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+function resolveStatus(balance: number, amountPaid: number, dueDate: string) {
+  if (balance <= 0) return "paid" as const;
+  const overdue = new Date(dueDate).getTime() < Date.now();
+  if (amountPaid > 0) return overdue ? "overdue" : ("partial" as const);
+  return overdue ? ("overdue" as const) : ("due" as const);
+}
+
 export const createFee = mutation({
   args: {
     academyId: v.id("academies"),
     studentId: v.id("students"),
     month: v.string(),
-    year: v.number(),
     feeAmount: v.number(),
     discount: v.number(),
     dueDate: v.string(),
   },
   async handler(ctx, args) {
+    const balance = args.feeAmount - args.discount;
+
     const feeId = await ctx.db.insert("fees", {
-      academyId: args.academyId,
-      studentId: args.studentId,
-      month: args.month,
-      year: args.year,
-      feeAmount: args.feeAmount,
-      discount: args.discount,
-      paymentPaid: 0,
-      balance: args.feeAmount - args.discount,
-      status: "pending",
-      dueDate: args.dueDate,
+      ...args,
+      amountPaid: 0,
+      balance,
+      status: resolveStatus(balance, 0, args.dueDate),
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
 
-    return {
-      feeId,
-      month: args.month,
-      balance: args.feeAmount - args.discount,
-    };
+    return { feeId, balance };
+  },
+});
+
+export const generateMonthlyFees = mutation({
+  args: {
+    academyId: v.id("academies"),
+    month: v.string(),
+    dueDate: v.string(),
+  },
+  async handler(ctx, args) {
+    const students = await ctx.db
+      .query("students")
+      .withIndex("by_academy_deleted", (q) =>
+        q.eq("academyId", args.academyId).eq("deletedAt", undefined)
+      )
+      .collect();
+
+    const active = students.filter((s) => s.status === "active");
+
+    const existing = await ctx.db
+      .query("fees")
+      .withIndex("by_academy_month", (q) =>
+        q.eq("academyId", args.academyId).eq("month", args.month)
+      )
+      .collect();
+
+    const alreadyBilled = new Set(
+      existing.filter((f) => f.deletedAt === undefined).map((f) => f.studentId)
+    );
+
+    let created = 0;
+    for (const student of active) {
+      if (alreadyBilled.has(student._id)) continue;
+
+      await ctx.db.insert("fees", {
+        academyId: args.academyId,
+        studentId: student._id,
+        month: args.month,
+        feeAmount: student.monthlyFee,
+        discount: 0,
+        amountPaid: 0,
+        balance: student.monthlyFee,
+        status: resolveStatus(student.monthlyFee, 0, args.dueDate),
+        dueDate: args.dueDate,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      created++;
+    }
+
+    return { created, skipped: active.length - created };
   },
 });
 
 export const recordPayment = mutation({
   args: {
     feeId: v.id("fees"),
-    amountPaid: v.number(),
-    paymentMethod: v.optional(v.string()),
+    amount: v.number(),
+    paymentMethod: v.string(),
     paymentDate: v.optional(v.string()),
   },
   async handler(ctx, args) {
+    if (args.amount <= 0) {
+      throw new Error("Payment must be greater than zero");
+    }
+
     const fee = await ctx.db.get(args.feeId);
-    if (!fee) {
+    if (!fee || fee.deletedAt !== undefined) {
       throw new Error("Fee record not found");
     }
 
-    const newPaymentPaid = fee.paymentPaid + args.amountPaid;
-    const newBalance = fee.balance - args.amountPaid;
-
-    let newStatus = fee.status;
-    if (newBalance <= 0) {
-      newStatus = "paid";
-    } else if (newPaymentPaid > 0) {
-      newStatus = "partial";
+    if (args.amount > fee.balance) {
+      throw new Error(
+        `Payment exceeds the outstanding balance of ${fee.balance}`
+      );
     }
 
+    const amountPaid = fee.amountPaid + args.amount;
+    const balance = fee.balance - args.amount;
+
     await ctx.db.patch(args.feeId, {
-      paymentPaid: newPaymentPaid,
-      balance: Math.max(0, newBalance),
-      status: newStatus,
+      amountPaid,
+      balance,
+      status: resolveStatus(balance, amountPaid, fee.dueDate),
       paymentMethod: args.paymentMethod,
-      paymentDate: args.paymentDate || new Date().toISOString().split("T")[0],
+      paymentDate: args.paymentDate ?? new Date().toISOString().slice(0, 10),
       updatedAt: Date.now(),
     });
 
-    const student = await ctx.db.get(fee.studentId);
-    if (student) {
-      const newOutstanding = Math.max(0, student.outstandingBalance - args.amountPaid);
-      await ctx.db.patch(fee.studentId, {
-        outstandingBalance: newOutstanding,
-      });
-    }
+    return { feeId: args.feeId, balance };
+  },
+});
 
-    return {
-      feeId: args.feeId,
-      newStatus,
-      balance: Math.max(0, newBalance),
-      amountPaid: args.amountPaid,
-    };
+export const listFees = query({
+  args: {
+    academyId: v.id("academies"),
+    month: v.optional(v.string()),
+    status: v.optional(v.string()),
+  },
+  async handler(ctx, args) {
+    const fees = await ctx.db
+      .query("fees")
+      .withIndex("by_academy_deleted", (q) =>
+        q.eq("academyId", args.academyId).eq("deletedAt", undefined)
+      )
+      .collect();
+
+    let rows = fees;
+    if (args.month) rows = rows.filter((f) => f.month === args.month);
+    if (args.status) rows = rows.filter((f) => f.status === args.status);
+
+    return Promise.all(
+      rows.map(async (f) => {
+        const student = await ctx.db.get(f.studentId);
+
+        return {
+          feeId: f._id,
+          studentId: f.studentId,
+          studentName: student?.name ?? "—",
+          month: f.month,
+          feeAmount: f.feeAmount,
+          discount: f.discount,
+          amountPaid: f.amountPaid,
+          balance: f.balance,
+          status: f.status,
+          paymentMethod: f.paymentMethod,
+          paymentDate: f.paymentDate,
+          dueDate: f.dueDate,
+        };
+      })
+    );
   },
 });
 
 export const getStudentFees = query({
-  args: {
-    studentId: v.id("students"),
-    status: v.optional(v.string()),
-  },
+  args: { studentId: v.id("students") },
   async handler(ctx, args) {
-    let query = ctx.db
+    const fees = await ctx.db
       .query("fees")
-      .withIndex("by_studentId", (q) => q.eq("studentId", args.studentId));
+      .withIndex("by_studentId", (q) => q.eq("studentId", args.studentId))
+      .collect();
 
-    const fees = await query.collect();
-
-    let filtered = fees;
-    if (args.status) {
-      filtered = filtered.filter((f) => f.status === args.status);
-    }
-
-    return filtered
-      .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
+    return fees
+      .filter((f) => f.deletedAt === undefined)
+      .sort((a, b) => b.month.localeCompare(a.month))
       .map((f) => ({
         feeId: f._id,
         month: f.month,
         feeAmount: f.feeAmount,
         discount: f.discount,
-        paymentPaid: f.paymentPaid,
+        amountPaid: f.amountPaid,
         balance: f.balance,
         status: f.status,
         paymentMethod: f.paymentMethod,
@@ -118,74 +190,15 @@ export const getStudentFees = query({
   },
 });
 
-export const getAcademyFees = query({
-  args: {
-    academyId: v.id("academies"),
-    month: v.optional(v.string()),
-    status: v.optional(v.string()),
-  },
+export const deleteFee = mutation({
+  args: { feeId: v.id("fees") },
   async handler(ctx, args) {
-    let query = ctx.db
-      .query("fees")
-      .withIndex("by_academyId", (q) => q.eq("academyId", args.academyId));
-
-    const fees = await query.collect();
-
-    let filtered = fees;
-    if (args.month) {
-      filtered = filtered.filter((f) => f.month === args.month);
-    }
-    if (args.status) {
-      filtered = filtered.filter((f) => f.status === args.status);
+    const fee = await ctx.db.get(args.feeId);
+    if (!fee || fee.deletedAt !== undefined) {
+      throw new Error("Fee record not found");
     }
 
-    return filtered.map((f) => ({
-      feeId: f._id,
-      studentId: f.studentId,
-      month: f.month,
-      feeAmount: f.feeAmount,
-      paymentPaid: f.paymentPaid,
-      balance: f.balance,
-      status: f.status,
-      dueDate: f.dueDate,
-    }));
-  },
-});
-
-export const getMonthlyFeeSummary = query({
-  args: {
-    academyId: v.id("academies"),
-    month: v.string(),
-  },
-  async handler(ctx, args) {
-    const fees = await ctx.db
-      .query("fees")
-      .withIndex("by_academyId", (q) => q.eq("academyId", args.academyId))
-      .collect();
-
-    const monthlyFees = fees.filter((f) => f.month === args.month);
-
-    const summary = {
-      totalFees: 0,
-      totalCollected: 0,
-      totalOutstanding: 0,
-      paidCount: 0,
-      partialCount: 0,
-      overdueCount: 0,
-      pendingCount: 0,
-    };
-
-    monthlyFees.forEach((f) => {
-      summary.totalFees += f.feeAmount;
-      summary.totalCollected += f.paymentPaid;
-      summary.totalOutstanding += f.balance;
-
-      if (f.status === "paid") summary.paidCount++;
-      else if (f.status === "partial") summary.partialCount++;
-      else if (f.status === "overdue") summary.overdueCount++;
-      else if (f.status === "pending") summary.pendingCount++;
-    });
-
-    return summary;
+    await ctx.db.patch(args.feeId, { deletedAt: Date.now() });
+    return { feeId: args.feeId };
   },
 });
