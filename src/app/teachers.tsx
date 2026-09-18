@@ -5,21 +5,11 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useSession } from "../context/session";
 import { formatMoney, todayKey, useTheme } from "../theme";
-import {
-  AppBar,
-  AppText,
-  Avatar,
-  Button,
-  Card,
-  EmptyState,
-  ErrorNote,
-  Fab,
-  Field,
-  Loader,
-  Row,
-} from "../components/ui";
-import { Sheet } from "../components/Sheet";
+import { AppBar, AppText, Avatar, Card, EmptyState, Fab, Loader } from "../components/ui";
+import { FormSheet } from "../components/FormSheet";
 import { cleanError } from "../lib/errors";
+
+const EMPTY = { name: "", subject: "", phone: "", salary: "" };
 
 export default function Teachers() {
   const t = useTheme();
@@ -33,21 +23,22 @@ export default function Teachers() {
   );
 
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [subject, setSubject] = useState("");
-  const [salary, setSalary] = useState("");
+  const [values, setValues] = useState<Record<string, string>>(EMPTY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  function setValue(key: string, value: string) {
+    setValues((prev) => ({ ...prev, [key]: value }));
+  }
 
   async function submit() {
     if (!session?.academyId) return;
 
-    if (!name.trim() || !phone.trim() || !subject.trim()) {
-      setError("Name, phone and subject are required");
+    if (!values.name?.trim() || !values.phone?.trim() || !values.subject?.trim()) {
+      setError("Name, subject and phone are required");
       return;
     }
-    const monthlySalary = Number(salary);
+    const monthlySalary = Number(values.salary);
     if (!Number.isFinite(monthlySalary) || monthlySalary < 0) {
       setError("Enter a valid salary");
       return;
@@ -58,19 +49,16 @@ export default function Teachers() {
     try {
       await create({
         academyId: session.academyId,
-        name: name.trim(),
-        phone: phone.trim(),
-        subject: subject.trim(),
+        name: values.name.trim(),
+        phone: values.phone.trim(),
+        subject: values.subject.trim(),
         monthlySalary,
         hireDate: todayKey(),
       });
       setOpen(false);
-      setName("");
-      setPhone("");
-      setSubject("");
-      setSalary("");
+      setValues(EMPTY);
     } catch (e) {
-      setError(cleanError(e, "Failed"));
+      setError(cleanError(e, "Could not add teacher"));
     } finally {
       setBusy(false);
     }
@@ -137,10 +125,7 @@ export default function Teachers() {
                   <AppText variant="callout" style={{ fontWeight: "600" } as never}>
                     {formatMoney(item.monthlySalary)}
                   </AppText>
-                  <Pressable
-                    onPress={() => confirmDelete(item.teacherId, item.name)}
-                    hitSlop={8}
-                  >
+                  <Pressable onPress={() => confirmDelete(item.teacherId, item.name)} hitSlop={8}>
                     <AppText variant="caption" color={t.colors.danger}>
                       Delete
                     </AppText>
@@ -154,16 +139,23 @@ export default function Teachers() {
 
       <Fab onPress={() => setOpen(true)} />
 
-      <Sheet open={open} onClose={() => setOpen(false)} title="Add teacher">
-        <View style={{ gap: t.spacing.md }}>
-          <Field label="Name" value={name} onChangeText={setName} placeholder="Ahmed Khan" autoCapitalize="words" />
-          <Field label="Subject" value={subject} onChangeText={setSubject} placeholder="Mathematics" autoCapitalize="words" />
-          <Field label="Phone" value={phone} onChangeText={setPhone} placeholder="03001112233" keyboardType="phone-pad" />
-          <Field label="Monthly salary" value={salary} onChangeText={setSalary} placeholder="45000" keyboardType="numeric" suffix="PKR" />
-          <ErrorNote message={error} />
-          <Button label="Add teacher" onPress={submit} loading={busy} />
-        </View>
-      </Sheet>
+      <FormSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Add teacher"
+        values={values}
+        onChange={setValue}
+        submitLabel="Add teacher"
+        onSubmit={submit}
+        busy={busy}
+        error={error}
+        fields={[
+          { key: "name", label: "Name", placeholder: "Ahmed Khan", autoCapitalize: "words" },
+          { key: "subject", label: "Subject", placeholder: "Mathematics", autoCapitalize: "words" },
+          { key: "phone", label: "Phone", placeholder: "03001112233", keyboard: "phone-pad" },
+          { key: "salary", label: "Monthly salary", placeholder: "45000", keyboard: "numeric" },
+        ]}
+      />
     </View>
   );
 }
