@@ -123,7 +123,7 @@ export default function Settings() {
                   title={f.label}
                   subtitle={f.key}
                   last={i === fields.length - 1}
-                  onPress={() =>
+                  onDelete={() =>
                     Alert.alert("Remove field?", f.label, [
                       { text: "Cancel", style: "cancel" },
                       {

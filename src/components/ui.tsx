@@ -370,6 +370,7 @@ export function Row({
   badge,
   badgeTone,
   onPress,
+  onDelete,
   leading,
   last = false,
 }: {
@@ -380,6 +381,7 @@ export function Row({
   badge?: string;
   badgeTone?: Tone;
   onPress?: () => void;
+  onDelete?: () => void;
   leading?: ReactNode;
   last?: boolean;
 }) {
@@ -421,6 +423,12 @@ export function Row({
         ) : null}
         {badge ? <Badge label={badge} tone={badgeTone} /> : null}
       </View>
+
+      {onDelete ? (
+        <Pressable onPress={onDelete} hitSlop={10}>
+          <Text style={{ ...t.typography.caption, color: t.colors.danger }}>Delete</Text>
+        </Pressable>
+      ) : null}
 
       {onPress && t.isIOS ? (
         <Text style={{ color: t.colors.textFaint, fontSize: 20 }}>›</Text>
