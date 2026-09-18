@@ -18,7 +18,7 @@ import {
   Row,
   Segmented,
 } from "../components/ui";
-import { Sheet } from "../components/Sheet";
+import { FormSheet } from "../components/FormSheet";
 import { cleanError } from "../lib/errors";
 
 const CATEGORIES = ["Rent", "Salary", "Electricity", "Internet", "Maintenance", "Other"];
@@ -34,17 +34,19 @@ export default function Expenses() {
   );
 
   const [open, setOpen] = useState(false);
-  const [category, setCategory] = useState(CATEGORIES[0]);
-  const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
+  const [values, setValues] = useState<Record<string, string>>({
+    category: CATEGORIES[0],
+    description: "",
+    amount: "",
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   async function submit() {
     if (!session?.academyId) return;
 
-    const value = Number(amount);
-    if (!description.trim() || !Number.isFinite(value) || value <= 0) {
+    const value = Number(values.amount);
+    if (!values.description?.trim() || !Number.isFinite(value) || value <= 0) {
       setError("Enter a description and a valid amount");
       return;
     }
@@ -55,15 +57,14 @@ export default function Expenses() {
       await create({
         academyId: session.academyId,
         date: todayKey(),
-        category,
-        description: description.trim(),
+        category: values.category,
+        description: values.description.trim(),
         amount: value,
         paidBy: session.name,
         paymentMethod: "Cash",
       });
       setOpen(false);
-      setDescription("");
-      setAmount("");
+      setValues({ category: CATEGORIES[0], description: "", amount: "" });
     } catch (e) {
       setError(cleanError(e, "Failed"));
     } finally {
@@ -129,24 +130,28 @@ export default function Expenses() {
 
       <Fab onPress={() => setOpen(true)} />
 
-      <Sheet open={open} onClose={() => setOpen(false)} title="Add expense">
-        <View style={{ gap: t.spacing.md }}>
-          <View style={{ gap: 6 }}>
-            <AppText variant="micro" color={t.colors.textMuted}>
-              CATEGORY
-            </AppText>
-            <Segmented
-              value={category}
-              onChange={setCategory}
-              options={CATEGORIES.map((c) => ({ label: c, value: c }))}
-            />
-          </View>
-          <Field label="Description" value={description} onChangeText={setDescription} placeholder="Monthly academy rent" />
-          <Field label="Amount" value={amount} onChangeText={setAmount} placeholder="50000" keyboardType="numeric" suffix="PKR" />
-          <ErrorNote message={error} />
-          <Button label="Save expense" onPress={submit} loading={busy} />
-        </View>
-      </Sheet>
+      <FormSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Add expense"
+        values={values}
+        onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))}
+        submitLabel="Save expense"
+        onSubmit={submit}
+        busy={busy}
+        error={error}
+        choices={[
+          {
+            key: "category",
+            label: "Category",
+            options: CATEGORIES.map((c) => ({ label: c, value: c })),
+          },
+        ]}
+        fields={[
+          { key: "description", label: "Description", placeholder: "Monthly academy rent" },
+          { key: "amount", label: "Amount", placeholder: "50000", keyboard: "numeric" },
+        ]}
+      />
     </View>
   );
 }
