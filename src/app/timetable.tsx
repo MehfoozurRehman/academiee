@@ -20,7 +20,7 @@ import {
   Screen,
   Segmented,
 } from "../components/ui";
-import { Sheet } from "../components/Sheet";
+import { FormSheet } from "../components/FormSheet";
 import { cleanError } from "../lib/errors";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -45,25 +45,31 @@ export default function Timetable() {
   );
 
   const [open, setOpen] = useState(false);
-  const [batchId, setBatchId] = useState<Id<"batches"> | null>(null);
-  const [teacherId, setTeacherId] = useState<Id<"teachers"> | null>(null);
-  const [day, setDay] = useState(DAYS[0]);
-  const [start, setStart] = useState("09:00");
-  const [end, setEnd] = useState("11:00");
-  const [subject, setSubject] = useState("");
+  const [values, setValues] = useState<Record<string, string>>({
+    batchId: "",
+    teacherId: "",
+    day: DAYS[0],
+    start: "09:00",
+    end: "11:00",
+    subject: "",
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (batches && batches.length && !batchId) setBatchId(batches[0].batchId);
-  }, [batches, batchId]);
+    if (batches && batches.length && !values.batchId) {
+      setValues((prev) => ({ ...prev, batchId: batches[0].batchId }));
+    }
+  }, [batches, values.batchId]);
   useEffect(() => {
-    if (teachers && teachers.length && !teacherId) setTeacherId(teachers[0].teacherId);
-  }, [teachers, teacherId]);
+    if (teachers && teachers.length && !values.teacherId) {
+      setValues((prev) => ({ ...prev, teacherId: teachers[0].teacherId }));
+    }
+  }, [teachers, values.teacherId]);
 
   async function submit() {
-    if (!session?.academyId || !batchId || !teacherId) return;
-    if (!subject.trim()) {
+    if (!session?.academyId || !values.batchId || !values.teacherId) return;
+    if (!values.subject?.trim()) {
       setError("Enter a subject");
       return;
     }
@@ -73,15 +79,15 @@ export default function Timetable() {
     try {
       await addSlot({
         academyId: session.academyId,
-        batchId,
-        teacherId,
-        day,
-        startTime: start,
-        endTime: end,
-        subject: subject.trim(),
+        batchId: values.batchId as Id<"batches">,
+        teacherId: values.teacherId as Id<"teachers">,
+        day: values.day,
+        startTime: values.start,
+        endTime: values.end,
+        subject: values.subject.trim(),
       });
       setOpen(false);
-      setSubject("");
+      setValues((prev) => ({ ...prev, subject: "" }));
     } catch (e) {
       setError(cleanError(e, "Failed"));
     } finally {
@@ -140,60 +146,43 @@ export default function Timetable() {
 
       <Fab onPress={() => setOpen(true)} />
 
-      <Sheet open={open} onClose={() => setOpen(false)} title="Add class slot">
-        <View style={{ gap: t.spacing.md }}>
-          <View style={{ gap: 6 }}>
-            <AppText variant="micro" color={t.colors.textMuted}>
-              DAY
-            </AppText>
-            <Segmented
-              value={day}
-              onChange={setDay}
-              options={DAYS.map((d) => ({ label: d.slice(0, 3), value: d }))}
-            />
-          </View>
-
-          {batches && batches.length > 0 ? (
-            <View style={{ gap: 6 }}>
-              <AppText variant="micro" color={t.colors.textMuted}>
-                BATCH
-              </AppText>
-              <Segmented
-                value={batchId ?? ""}
-                onChange={(v) => setBatchId(v as Id<"batches">)}
-                options={batches.map((b) => ({ label: b.name, value: b.batchId }))}
-              />
-            </View>
-          ) : null}
-
-          {teachers && teachers.length > 0 ? (
-            <View style={{ gap: 6 }}>
-              <AppText variant="micro" color={t.colors.textMuted}>
-                TEACHER
-              </AppText>
-              <Segmented
-                value={teacherId ?? ""}
-                onChange={(v) => setTeacherId(v as Id<"teachers">)}
-                options={teachers.map((x) => ({ label: x.name, value: x.teacherId }))}
-              />
-            </View>
-          ) : null}
-
-          <Field label="Subject" value={subject} onChangeText={setSubject} placeholder="Mathematics" autoCapitalize="words" />
-
-          <View style={{ flexDirection: "row", gap: t.spacing.md }}>
-            <View style={{ flex: 1 }}>
-              <Field label="Start" value={start} onChangeText={setStart} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Field label="End" value={end} onChangeText={setEnd} />
-            </View>
-          </View>
-
-          <ErrorNote message={error} />
-          <Button label="Add slot" onPress={submit} loading={busy} />
-        </View>
-      </Sheet>
+      <FormSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Add class slot"
+        values={values}
+        onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))}
+        submitLabel="Add slot"
+        onSubmit={submit}
+        busy={busy}
+        error={error}
+        choices={[
+          { key: "day", label: "Day", options: DAYS.map((d) => ({ label: d, value: d })) },
+          ...(batches && batches.length > 0
+            ? [
+                {
+                  key: "batchId",
+                  label: "Batch",
+                  options: batches.map((b) => ({ label: b.name, value: b.batchId })),
+                },
+              ]
+            : []),
+          ...(teachers && teachers.length > 0
+            ? [
+                {
+                  key: "teacherId",
+                  label: "Teacher",
+                  options: teachers.map((x) => ({ label: x.name, value: x.teacherId })),
+                },
+              ]
+            : []),
+        ]}
+        fields={[
+          { key: "subject", label: "Subject", placeholder: "Mathematics", autoCapitalize: "words" },
+          { key: "start", label: "Start time", placeholder: "09:00" },
+          { key: "end", label: "End time", placeholder: "11:00" },
+        ]}
+      />
     </View>
   );
 }

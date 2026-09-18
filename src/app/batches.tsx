@@ -20,7 +20,7 @@ import {
   Screen,
   Segmented,
 } from "../components/ui";
-import { Sheet } from "../components/Sheet";
+import { FormSheet } from "../components/FormSheet";
 import { cleanError } from "../lib/errors";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -54,30 +54,36 @@ export default function Batches() {
   );
 
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [courseId, setCourseId] = useState<Id<"courses"> | null>(null);
-  const [teacherId, setTeacherId] = useState<Id<"teachers"> | null>(null);
-  const [start, setStart] = useState("09:00");
-  const [end, setEnd] = useState("11:00");
+  const [values, setValues] = useState<Record<string, string>>({
+    name: "",
+    courseId: "",
+    teacherId: "",
+    start: "09:00",
+    end: "11:00",
+    capacity: "25",
+  });
   const [days, setDays] = useState<string[]>(["Mon", "Wed", "Fri"]);
-  const [capacity, setCapacity] = useState("25");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (courses && courses.length && !courseId) setCourseId(courses[0].courseId);
-  }, [courses, courseId]);
+    if (courses && courses.length && !values.courseId) {
+      setValues((prev) => ({ ...prev, courseId: courses[0].courseId }));
+    }
+  }, [courses, values.courseId]);
 
   useEffect(() => {
-    if (teachers && teachers.length && !teacherId) setTeacherId(teachers[0].teacherId);
-  }, [teachers, teacherId]);
+    if (teachers && teachers.length && !values.teacherId) {
+      setValues((prev) => ({ ...prev, teacherId: teachers[0].teacherId }));
+    }
+  }, [teachers, values.teacherId]);
 
   async function submit() {
-    if (!session?.academyId || !courseId || !teacherId) {
+    if (!session?.academyId || !values.courseId || !values.teacherId) {
       setError("A course and a teacher are required");
       return;
     }
-    if (!name.trim() || days.length === 0) {
+    if (!values.name?.trim() || days.length === 0) {
       setError("Enter a name and pick at least one day");
       return;
     }
@@ -87,16 +93,16 @@ export default function Batches() {
     try {
       await create({
         academyId: session.academyId,
-        courseId,
-        teacherId,
-        name: name.trim(),
-        startTime: start,
-        endTime: end,
+        courseId: values.courseId as Id<"courses">,
+        teacherId: values.teacherId as Id<"teachers">,
+        name: values.name.trim(),
+        startTime: values.start,
+        endTime: values.end,
         days: days.map((d) => FULL[d]),
-        capacity: Number(capacity) || 20,
+        capacity: Number(values.capacity) || 20,
       });
       setOpen(false);
-      setName("");
+      setValues((prev) => ({ ...prev, name: "" }));
     } catch (e) {
       setError(cleanError(e, "Failed"));
     } finally {
@@ -216,87 +222,52 @@ export default function Batches() {
 
       {!blocked ? <Fab onPress={() => setOpen(true)} /> : null}
 
-      <Sheet open={open} onClose={() => setOpen(false)} title="New batch">
-        <View style={{ gap: t.spacing.md }}>
-          <Field label="Batch name" value={name} onChangeText={setName} placeholder="Matric Morning A" autoCapitalize="words" />
-
-          {courses && courses.length > 0 ? (
-            <View style={{ gap: 6 }}>
-              <AppText variant="micro" color={t.colors.textMuted}>
-                COURSE
-              </AppText>
-              <Segmented
-                value={courseId ?? ""}
-                onChange={(v) => setCourseId(v as Id<"courses">)}
-                options={courses.map((c) => ({ label: c.name, value: c.courseId }))}
-              />
-            </View>
-          ) : null}
-
-          {teachers && teachers.length > 0 ? (
-            <View style={{ gap: 6 }}>
-              <AppText variant="micro" color={t.colors.textMuted}>
-                TEACHER
-              </AppText>
-              <Segmented
-                value={teacherId ?? ""}
-                onChange={(v) => setTeacherId(v as Id<"teachers">)}
-                options={teachers.map((x) => ({ label: x.name, value: x.teacherId }))}
-              />
-            </View>
-          ) : null}
-
-          <View style={{ gap: 6 }}>
-            <AppText variant="micro" color={t.colors.textMuted}>
-              DAYS
-            </AppText>
-            <View style={{ flexDirection: "row", gap: 6 }}>
-              {DAYS.map((d) => {
-                const on = days.includes(d);
-                return (
-                  <Pressable
-                    key={d}
-                    onPress={() =>
-                      setDays((prev) => (on ? prev.filter((x) => x !== d) : [...prev, d]))
-                    }
-                    style={{
-                      flex: 1,
-                      paddingVertical: t.spacing.sm,
-                      borderRadius: t.radius.sm,
-                      alignItems: "center",
-                      backgroundColor: on ? t.colors.accent : t.colors.surface,
-                      borderWidth: 1,
-                      borderColor: on ? t.colors.accent : t.colors.border,
-                    }}
-                  >
-                    <AppText
-                      variant="micro"
-                      color={on ? t.colors.onAccent : t.colors.textMuted}
-                    >
-                      {d}
-                    </AppText>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-
-          <View style={{ flexDirection: "row", gap: t.spacing.md }}>
-            <View style={{ flex: 1 }}>
-              <Field label="Start" value={start} onChangeText={setStart} placeholder="09:00" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Field label="End" value={end} onChangeText={setEnd} placeholder="11:00" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Field label="Seats" value={capacity} onChangeText={setCapacity} keyboardType="numeric" />
-            </View>
-          </View>
-
-          <ErrorNote message={error} />
-          <Button label="Create batch" onPress={submit} loading={busy} />
-        </View>
-      </Sheet>
+      <FormSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="New batch"
+        values={values}
+        onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))}
+        submitLabel="Create batch"
+        onSubmit={submit}
+        busy={busy}
+        error={error}
+        selected={{ days }}
+        onToggle={(_key, value) =>
+          setDays((prev) =>
+            prev.includes(value) ? prev.filter((d) => d !== value) : [...prev, value]
+          )
+        }
+        toggleGroups={[
+          { key: "days", label: "Days", options: DAYS.map((d) => ({ label: d, value: d })) },
+        ]}
+        choices={[
+          ...(courses && courses.length > 0
+            ? [
+                {
+                  key: "courseId",
+                  label: "Course",
+                  options: courses.map((c) => ({ label: c.name, value: c.courseId })),
+                },
+              ]
+            : []),
+          ...(teachers && teachers.length > 0
+            ? [
+                {
+                  key: "teacherId",
+                  label: "Teacher",
+                  options: teachers.map((x) => ({ label: x.name, value: x.teacherId })),
+                },
+              ]
+            : []),
+        ]}
+        fields={[
+          { key: "name", label: "Batch name", placeholder: "Matric Morning A", autoCapitalize: "words" },
+          { key: "start", label: "Start time", placeholder: "09:00" },
+          { key: "end", label: "End time", placeholder: "11:00" },
+          { key: "capacity", label: "Seats", placeholder: "25", keyboard: "numeric" },
+        ]}
+      />
     </View>
   );
 }
