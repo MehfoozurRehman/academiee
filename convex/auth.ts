@@ -1,7 +1,9 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { hashPassword, verifyPassword } from "./passwords";
 
 const ADMIN_EMAIL = "admin@gmail.com";
+const ADMIN_PASSWORD = "devscot-2026";
 
 export const signup = mutation({
   args: {
@@ -16,6 +18,9 @@ export const signup = mutation({
     if (email === ADMIN_EMAIL) {
       throw new Error("This email is reserved");
     }
+    if (args.password.length < 6) {
+      throw new Error("Password must be at least 6 characters");
+    }
 
     const existing = await ctx.db
       .query("users")
@@ -28,8 +33,8 @@ export const signup = mutation({
 
     const userId = await ctx.db.insert("users", {
       email,
-      password: args.password,
-      name: args.name,
+      password: await hashPassword(args.password),
+      name: args.name.trim(),
       phone: args.phone,
       status: "active",
       role: "academy_owner",
@@ -37,7 +42,14 @@ export const signup = mutation({
       updatedAt: Date.now(),
     });
 
-    return { userId, email, name: args.name, role: "academy_owner" as const };
+    return {
+      userId,
+      email,
+      name: args.name.trim(),
+      role: "academy_owner" as const,
+      academyCount: 0,
+      soleAcademyId: null,
+    };
   },
 });
 
@@ -54,7 +66,7 @@ export const login = mutation({
       .withIndex("by_email", (q) => q.eq("email", email))
       .first();
 
-    if (!user || user.password !== args.password) {
+    if (!user || !(await verifyPassword(args.password, user.password))) {
       throw new Error("Incorrect email or password");
     }
 
@@ -95,9 +107,7 @@ export const getCurrentUser = query({
   args: { userId: v.id("users") },
   async handler(ctx, args) {
     const user = await ctx.db.get(args.userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
+    if (!user) return null;
 
     return {
       userId: user._id,
@@ -110,21 +120,52 @@ export const getCurrentUser = query({
   },
 });
 
+export const changePassword = mutation({
+  args: {
+    userId: v.id("users"),
+    currentPassword: v.string(),
+    newPassword: v.string(),
+  },
+  async handler(ctx, args) {
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (!(await verifyPassword(args.currentPassword, user.password))) {
+      throw new Error("Current password is incorrect");
+    }
+    if (args.newPassword.length < 6) {
+      throw new Error("Password must be at least 6 characters");
+    }
+
+    await ctx.db.patch(args.userId, {
+      password: await hashPassword(args.newPassword),
+      updatedAt: Date.now(),
+    });
+
+    return { userId: args.userId };
+  },
+});
+
 export const seedAdmin = mutation({
   args: {},
   async handler(ctx) {
+    const password = await hashPassword(ADMIN_PASSWORD);
+
     const existing = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", ADMIN_EMAIL))
       .first();
 
     if (existing) {
+      await ctx.db.patch(existing._id, { password, updatedAt: Date.now() });
       return { created: false, userId: existing._id };
     }
 
     const userId = await ctx.db.insert("users", {
       email: ADMIN_EMAIL,
-      password: "devscot-2026",
+      password,
       name: "Administrator",
       status: "active",
       role: "admin",
