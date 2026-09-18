@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, FlatList, View } from "react-native";
+import { Alert, FlatList, Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -7,6 +7,7 @@ import { useSession } from "../context/session";
 import { formatMoney, todayKey, useTheme } from "../theme";
 import {
   AppBar,
+  AppText,
   Avatar,
   Button,
   Card,
@@ -116,17 +117,36 @@ export default function Teachers() {
           contentContainerStyle={{ padding: t.spacing.lg, paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <Card padded={false} style={{ marginBottom: t.spacing.sm }}>
-              <Row
-                last
-                title={item.name}
-                subtitle={`${item.subject} · ${item.phone} · ${item.batchCount} batch(es)`}
-                meta={formatMoney(item.monthlySalary)}
-                badge={item.status !== "active" ? item.status : undefined}
-                badgeTone="neutral"
-                leading={<Avatar name={item.name} />}
-                onPress={() => confirmDelete(item.teacherId, item.name)}
-              />
+            <Card style={{ marginBottom: t.spacing.sm }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: t.spacing.md }}>
+                <Avatar name={item.name} />
+
+                <View style={{ flex: 1, gap: 2 }}>
+                  <AppText variant="body" numberOfLines={1} style={{ fontWeight: "600" } as never}>
+                    {item.name}
+                  </AppText>
+                  <AppText variant="caption" color={t.colors.textMuted} numberOfLines={1}>
+                    {item.subject} · {item.batchCount} batch{item.batchCount === 1 ? "" : "es"}
+                  </AppText>
+                  <AppText variant="caption" color={t.colors.textFaint} numberOfLines={1}>
+                    {item.phone}
+                  </AppText>
+                </View>
+
+                <View style={{ alignItems: "flex-end", gap: 6 }}>
+                  <AppText variant="callout" style={{ fontWeight: "600" } as never}>
+                    {formatMoney(item.monthlySalary)}
+                  </AppText>
+                  <Pressable
+                    onPress={() => confirmDelete(item.teacherId, item.name)}
+                    hitSlop={8}
+                  >
+                    <AppText variant="caption" color={t.colors.danger}>
+                      Delete
+                    </AppText>
+                  </Pressable>
+                </View>
+              </View>
             </Card>
           )}
         />
