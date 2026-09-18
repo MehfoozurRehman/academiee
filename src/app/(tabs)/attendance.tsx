@@ -32,6 +32,16 @@ function shiftDay(key: string, delta: number) {
   return d.toISOString().slice(0, 10);
 }
 
+function friendlyDate(key: string) {
+  if (key === todayKey()) return "Today";
+  if (key === shiftDay(todayKey(), -1)) return "Yesterday";
+  return new Date(key).toLocaleDateString("en-US", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
 export default function Attendance() {
   const t = useTheme();
   const { session } = useSession();
@@ -103,7 +113,7 @@ export default function Attendance() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
-      <AppBar title="Attendance" subtitle={date} large />
+      <AppBar title="Attendance" subtitle={friendlyDate(date)} large />
 
       <View style={{ paddingHorizontal: t.spacing.lg, gap: t.spacing.md, paddingBottom: t.spacing.md }}>
         {batches && batches.length > 0 ? (
@@ -114,18 +124,48 @@ export default function Attendance() {
           />
         ) : null}
 
-        <View style={{ flexDirection: "row", alignItems: "center", gap: t.spacing.sm }}>
-          <Button label="‹" variant="tonal" compact full={false} onPress={() => setDate(shiftDay(date, -1))} />
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: t.colors.surface,
+            borderRadius: t.radius.md,
+            borderWidth: 1,
+            borderColor: t.colors.border,
+            paddingHorizontal: 4,
+            paddingVertical: 4,
+          }}
+        >
+          <Pressable
+            onPress={() => setDate(shiftDay(date, -1))}
+            hitSlop={8}
+            style={{ width: 34, height: 30, alignItems: "center", justifyContent: "center" }}
+          >
+            <AppText variant="heading" color={t.colors.accent}>
+              ‹
+            </AppText>
+          </Pressable>
+
           <View style={{ flex: 1, alignItems: "center" }}>
-            <AppText variant="callout">{date === todayKey() ? "Today" : date}</AppText>
+            <AppText variant="callout">{friendlyDate(date)}</AppText>
           </View>
-          <Button
-            label="›"
-            variant="tonal"
-            compact
-            full={false}
+
+          <Pressable
             onPress={() => setDate(shiftDay(date, 1))}
-          />
+            hitSlop={8}
+            disabled={date >= todayKey()}
+            style={{
+              width: 34,
+              height: 30,
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: date >= todayKey() ? 0.3 : 1,
+            }}
+          >
+            <AppText variant="heading" color={t.colors.accent}>
+              ›
+            </AppText>
+          </Pressable>
         </View>
       </View>
 

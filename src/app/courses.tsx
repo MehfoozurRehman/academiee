@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, FlatList, View } from "react-native";
+import { Alert, FlatList, Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -7,6 +7,7 @@ import { useSession } from "../context/session";
 import { formatMoney, useTheme } from "../theme";
 import {
   AppBar,
+  AppText,
   Button,
   Card,
   EmptyState,
@@ -86,15 +87,26 @@ export default function Courses() {
           contentContainerStyle={{ padding: t.spacing.lg, paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <Card padded={false} style={{ marginBottom: t.spacing.sm }}>
-              <Row
-                last
-                title={item.name}
-                subtitle={`${item.batchCount} batch(es) · ${item.studentCount} student(s)${
-                  item.durationMonths ? ` · ${item.durationMonths} months` : ""
-                }`}
-                meta={formatMoney(item.monthlyFee)}
-                onPress={() =>
+            <Card style={{ marginBottom: t.spacing.sm }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: t.spacing.md }}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <AppText variant="body" numberOfLines={1} style={{ fontWeight: "600" } as never}>
+                    {item.name}
+                  </AppText>
+                  <AppText variant="caption" color={t.colors.textMuted} numberOfLines={1}>
+                    {item.batchCount} batch{item.batchCount === 1 ? "" : "es"} ·{" "}
+                    {item.studentCount} student{item.studentCount === 1 ? "" : "s"}
+                    {item.durationMonths ? ` · ${item.durationMonths} months` : ""}
+                  </AppText>
+                </View>
+
+                <View style={{ alignItems: "flex-end", gap: 6 }}>
+                  <AppText variant="callout" style={{ fontWeight: "600" } as never}>
+                    {formatMoney(item.monthlyFee)}
+                  </AppText>
+                  <Pressable
+                    hitSlop={8}
+                    onPress={() =>
                   Alert.alert("Delete course?", `${item.name} will move to the recycle bin.`, [
                     { text: "Cancel", style: "cancel" },
                     {
@@ -111,9 +123,15 @@ export default function Courses() {
                         }
                       },
                     },
-                  ])
-                }
-              />
+                      ])
+                    }
+                  >
+                    <AppText variant="caption" color={t.colors.danger}>
+                      Delete
+                    </AppText>
+                  </Pressable>
+                </View>
+              </View>
             </Card>
           )}
         />
