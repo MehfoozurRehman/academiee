@@ -35,28 +35,30 @@ function Tile({
   const t = useTheme();
 
   return (
-    <Card style={{ flex: 1, minWidth: "45%" }} onPress={onPress}>
-      <View style={{ gap: t.spacing.sm }}>
-        <View
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: t.radius.sm,
-            backgroundColor: tone,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Icon name={icon} size={18} color={t.colors.text} />
+    <View style={{ flex: 1, minWidth: 0 }}>
+      <Card onPress={onPress}>
+        <View style={{ gap: t.spacing.sm }}>
+          <View
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: t.radius.sm,
+              backgroundColor: tone,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon name={icon} size={17} color={t.colors.text} />
+          </View>
+          <AppText variant="caption" color={t.colors.textMuted} numberOfLines={1}>
+            {label}
+          </AppText>
+          <AppText variant="title" numberOfLines={1} style={{ minWidth: 0 } as never}>
+            {value}
+          </AppText>
         </View>
-        <AppText variant="caption" color={t.colors.textMuted}>
-          {label}
-        </AppText>
-        <AppText variant="title" numberOfLines={1}>
-          {value}
-        </AppText>
-      </View>
-    </Card>
+      </Card>
+    </View>
   );
 }
 
@@ -91,35 +93,40 @@ export default function Dashboard() {
       />
 
       <Screen scroll>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: t.spacing.md }}>
-          <Tile
-            label="Students"
-            value={String(stats.activeStudents)}
-            tone={t.colors.accentSoft}
-            icon="students"
-            onPress={() => router.push("/students")}
-          />
-          <Tile
-            label="Collected"
-            value={formatMoney(stats.collected, currency)}
-            tone={t.colors.successSoft}
-            icon="fees"
-            onPress={() => router.push("/fees")}
-          />
-          <Tile
-            label="Outstanding"
-            value={formatMoney(stats.outstanding, currency)}
-            tone={t.colors.warningSoft}
-            icon="expenses"
-            onPress={() => router.push("/fees")}
-          />
-          <Tile
-            label="Attendance"
-            value={`${stats.attendanceRate}%`}
-            tone={t.colors.infoSoft}
-            icon="attendance"
-            onPress={() => router.push("/attendance")}
-          />
+        <View style={{ gap: t.spacing.md }}>
+          <View style={{ flexDirection: "row", gap: t.spacing.md }}>
+            <Tile
+              label="Students"
+              value={String(stats.activeStudents)}
+              tone={t.colors.accentSoft}
+              icon="students"
+              onPress={() => router.push("/students")}
+            />
+            <Tile
+              label="Collected"
+              value={formatMoney(stats.collected, currency)}
+              tone={t.colors.successSoft}
+              icon="fees"
+              onPress={() => router.push("/fees")}
+            />
+          </View>
+
+          <View style={{ flexDirection: "row", gap: t.spacing.md }}>
+            <Tile
+              label="Outstanding"
+              value={formatMoney(stats.outstanding, currency)}
+              tone={t.colors.warningSoft}
+              icon="expenses"
+              onPress={() => router.push("/fees")}
+            />
+            <Tile
+              label="Attendance"
+              value={`${stats.attendanceRate}%`}
+              tone={t.colors.infoSoft}
+              icon="attendance"
+              onPress={() => router.push("/attendance")}
+            />
+          </View>
         </View>
 
         <Card>
