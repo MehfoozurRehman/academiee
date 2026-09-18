@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Dimensions, View } from "react-native";
 import { Host, ModalBottomSheet, RNHostView } from "@expo/ui/jetpack-compose";
 import { useTheme } from "../theme";
 import { SheetBody } from "./SheetBody";
@@ -27,7 +28,9 @@ export function Sheet({
         skipPartiallyExpanded
       >
         <RNHostView matchContents>
-          <SheetBody title={title}>{children}</SheetBody>
+          <View style={{ width: Dimensions.get("window").width }}>
+            <SheetBody title={title}>{children}</SheetBody>
+          </View>
         </RNHostView>
       </ModalBottomSheet>
     </Host>
