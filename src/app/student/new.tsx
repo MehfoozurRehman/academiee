@@ -17,6 +17,7 @@ import {
   Screen,
   Segmented,
 } from "../../components/ui";
+import { cleanError } from "../../lib/errors";
 
 export default function NewStudent() {
   const t = useTheme();
@@ -76,7 +77,7 @@ export default function NewStudent() {
       router.back();
     } catch (e) {
       setError(
-        e instanceof Error ? e.message.replace(/^.*Uncaught Error:\s*/, "") : "Could not add student"
+        cleanError(e, "Could not add student")
       );
     } finally {
       setBusy(false);

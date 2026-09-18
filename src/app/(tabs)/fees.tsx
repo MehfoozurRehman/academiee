@@ -18,6 +18,7 @@ import {
   type Tone,
 } from "../../components/ui";
 import { PaymentSheet } from "../../components/PaymentSheet";
+import { cleanError } from "../../lib/errors";
 
 const TONE: Record<string, Tone> = {
   paid: "success",
@@ -80,7 +81,7 @@ export default function Fees() {
         `${result.created} created, ${result.skipped} already existed.`
       );
     } catch (e) {
-      Alert.alert("Could not generate", e instanceof Error ? e.message : "Unknown error");
+      Alert.alert("Could not generate", cleanError(e, "Unknown error"));
     }
   }
 

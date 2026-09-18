@@ -26,7 +26,14 @@ export function Screen({
 }) {
   const t = useTheme();
   const body = (
-    <View style={{ padding: padded ? t.spacing.lg : 0, gap: t.spacing.lg, paddingBottom: t.spacing.xxl * 2 }}>
+    <View
+      style={{
+        paddingHorizontal: padded ? t.spacing.lg : 0,
+        paddingTop: padded ? t.spacing.md : 0,
+        gap: t.spacing.md + 2,
+        paddingBottom: 120,
+      }}
+    >
       {children}
     </View>
   );
@@ -68,52 +75,53 @@ export function AppBar({
 }) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  const showControls = Boolean(onBack || action);
 
   return (
     <View
       style={{
-        paddingTop: insets.top + t.spacing.sm,
+        paddingTop: insets.top + (large ? 2 : t.spacing.xs),
         paddingHorizontal: t.spacing.lg,
-        paddingBottom: t.spacing.md,
+        paddingBottom: large ? t.spacing.sm : t.spacing.sm + 2,
         backgroundColor: t.colors.bg,
         borderBottomWidth: large ? 0 : Platform.OS === "ios" ? 0.5 : 0,
         borderBottomColor: t.colors.border,
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: t.spacing.sm, minHeight: 36 }}>
-        {onBack ? (
-          <Pressable
-            onPress={onBack}
-            hitSlop={12}
-            style={{ paddingRight: t.spacing.xs }}
-          >
-            <Text style={{ color: t.colors.accent, fontSize: 28, lineHeight: 30 }}>
-              {t.isIOS ? "‹" : "←"}
-            </Text>
-          </Pressable>
-        ) : null}
+      {showControls || !large ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: t.spacing.sm, minHeight: 34 }}>
+          {onBack ? (
+            <Pressable onPress={onBack} hitSlop={12} style={{ paddingRight: t.spacing.xs }}>
+              <Text style={{ color: t.colors.accent, fontSize: 28, lineHeight: 30 }}>
+                {t.isIOS ? "‹" : "←"}
+              </Text>
+            </Pressable>
+          ) : null}
 
-        <View style={{ flex: 1 }}>
-          {!large ? (
-            <Text numberOfLines={1} style={{ ...t.typography.heading, color: t.colors.text }}>
-              {title}
-            </Text>
-          ) : null}
-          {subtitle && !large ? (
-            <Text numberOfLines={1} style={{ ...t.typography.caption, color: t.colors.textMuted }}>
-              {subtitle}
-            </Text>
-          ) : null}
+          <View style={{ flex: 1 }}>
+            {!large ? (
+              <>
+                <Text numberOfLines={1} style={{ ...t.typography.heading, color: t.colors.text }}>
+                  {title}
+                </Text>
+                {subtitle ? (
+                  <Text numberOfLines={1} style={{ ...t.typography.caption, color: t.colors.textMuted }}>
+                    {subtitle}
+                  </Text>
+                ) : null}
+              </>
+            ) : null}
+          </View>
+
+          {action}
         </View>
-
-        {action}
-      </View>
+      ) : null}
 
       {large ? (
-        <View style={{ marginTop: t.spacing.sm }}>
+        <View style={{ marginTop: showControls ? t.spacing.xs : 0 }}>
           <Text style={{ ...t.typography.display, color: t.colors.text }}>{title}</Text>
           {subtitle ? (
-            <Text style={{ ...t.typography.callout, color: t.colors.textMuted, marginTop: 2 }}>
+            <Text style={{ ...t.typography.callout, color: t.colors.textMuted, marginTop: 1 }}>
               {subtitle}
             </Text>
           ) : null}
@@ -237,8 +245,8 @@ export function Button({
       style={({ pressed }) => ({
         backgroundColor: bg,
         opacity: off ? 0.45 : pressed && t.isIOS ? 0.75 : 1,
-        paddingVertical: compact ? t.spacing.sm : t.spacing.md + 2,
-        paddingHorizontal: t.spacing.lg,
+        paddingVertical: compact ? 7 : 11,
+        paddingHorizontal: compact ? t.spacing.md : t.spacing.lg,
         borderRadius: t.isIOS ? t.radius.md : t.radius.pill,
         alignItems: "center",
         justifyContent: "center",
@@ -248,7 +256,7 @@ export function Button({
       })}
     >
       {loading ? <ActivityIndicator size="small" color={fg} /> : null}
-      <Text style={{ ...t.typography.callout, fontSize: compact ? 14 : 16, fontWeight: "600", color: fg }}>
+      <Text style={{ ...t.typography.callout, fontSize: compact ? 13 : 15, fontWeight: "600", color: fg }}>
         {label}
       </Text>
     </Pressable>
@@ -309,9 +317,9 @@ export function Field({
           style={{
             flex: 1,
             color: t.colors.text,
-            fontSize: 16,
-            paddingVertical: multiline ? t.spacing.md : t.spacing.md + 2,
-            minHeight: multiline ? 88 : undefined,
+            fontSize: 15,
+            paddingVertical: multiline ? 10 : 11,
+            minHeight: multiline ? 76 : undefined,
             textAlignVertical: multiline ? "top" : "center",
           }}
         />
@@ -508,8 +516,8 @@ export function Segmented({
             onPress={() => onChange(o.value)}
             android_ripple={{ color: t.colors.accentSoft }}
             style={{
-              paddingHorizontal: t.spacing.lg,
-              paddingVertical: t.spacing.sm,
+              paddingHorizontal: 13,
+              paddingVertical: 6,
               borderRadius: t.radius.pill,
               backgroundColor: active ? t.colors.accent : t.colors.surface,
               borderWidth: 1,

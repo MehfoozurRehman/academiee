@@ -6,6 +6,7 @@ import { api } from "../../convex/_generated/api";
 import { useSession } from "../context/session";
 import { useTheme } from "../theme";
 import { AppBar, AppText, Button, ErrorNote, Field, Screen } from "../components/ui";
+import { cleanError } from "../lib/errors";
 
 export default function Signup() {
   const t = useTheme();
@@ -52,7 +53,7 @@ export default function Signup() {
       router.replace("/create-academy");
     } catch (e) {
       setError(
-        e instanceof Error ? e.message.replace(/^.*Uncaught Error:\s*/, "") : "Sign up failed"
+        cleanError(e, "Sign up failed")
       );
     } finally {
       setBusy(false);

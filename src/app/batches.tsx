@@ -21,6 +21,7 @@ import {
   Segmented,
 } from "../components/ui";
 import { Sheet } from "../components/PaymentSheet";
+import { cleanError } from "../lib/errors";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const FULL: Record<string, string> = {
@@ -97,7 +98,7 @@ export default function Batches() {
       setOpen(false);
       setName("");
     } catch (e) {
-      setError(e instanceof Error ? e.message.replace(/^.*Uncaught Error:\s*/, "") : "Failed");
+      setError(cleanError(e, "Failed"));
     } finally {
       setBusy(false);
     }
@@ -180,7 +181,7 @@ export default function Batches() {
                             } catch (e) {
                               Alert.alert(
                                 "Could not delete",
-                                e instanceof Error ? e.message : "Unknown error"
+                                cleanError(e, "Unknown error")
                               );
                             }
                           },

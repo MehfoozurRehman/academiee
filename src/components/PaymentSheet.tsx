@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { formatMoney, useTheme } from "../theme";
 import { AppText, Button, ErrorNote, Field, Segmented } from "./ui";
+import { cleanError } from "../lib/errors";
 
 const METHODS = ["Cash", "Bank Transfer", "JazzCash", "EasyPaisa"];
 
@@ -101,7 +102,7 @@ export function PaymentSheet({
       onClose();
     } catch (e) {
       setError(
-        e instanceof Error ? e.message.replace(/^.*Uncaught Error:\s*/, "") : "Payment failed"
+        cleanError(e, "Payment failed")
       );
     } finally {
       setBusy(false);
