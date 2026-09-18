@@ -20,6 +20,7 @@ import {
   Segmented,
 } from "../components/ui";
 import { Sheet } from "../components/Sheet";
+import { FormSheet } from "../components/FormSheet";
 import { cleanError } from "../lib/errors";
 
 export default function Tests() {
@@ -38,10 +39,12 @@ export default function Tests() {
   );
 
   const [open, setOpen] = useState(false);
-  const [batchId, setBatchId] = useState<Id<"batches"> | null>(null);
-  const [name, setName] = useState("");
-  const [subject, setSubject] = useState("");
-  const [totalMarks, setTotalMarks] = useState("50");
+  const [values, setValues] = useState<Record<string, string>>({
+    batchId: "",
+    name: "",
+    subject: "",
+    totalMarks: "50",
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -51,8 +54,10 @@ export default function Tests() {
   const detail = useQuery(api.tests.getTestResults, openTest ? { testId: openTest } : "skip");
 
   useEffect(() => {
-    if (batches && batches.length && !batchId) setBatchId(batches[0].batchId);
-  }, [batches, batchId]);
+    if (batches && batches.length && !values.batchId) {
+      setValues((prev) => ({ ...prev, batchId: batches[0].batchId }));
+    }
+  }, [batches, values.batchId]);
 
   useEffect(() => {
     if (!detail) return;
@@ -64,8 +69,8 @@ export default function Tests() {
   }, [detail]);
 
   async function submitTest() {
-    if (!session?.academyId || !batchId) return;
-    if (!name.trim()) {
+    if (!session?.academyId || !values.batchId) return;
+    if (!values.name?.trim()) {
       setError("Enter a test name");
       return;
     }
@@ -75,15 +80,14 @@ export default function Tests() {
     try {
       await create({
         academyId: session.academyId,
-        batchId,
-        name: name.trim(),
-        subject: subject.trim() || undefined,
+        batchId: values.batchId as Id<"batches">,
+        name: values.name.trim(),
+        subject: values.subject?.trim() || undefined,
         date: todayKey(),
-        totalMarks: Number(totalMarks) || 50,
+        totalMarks: Number(values.totalMarks) || 50,
       });
       setOpen(false);
-      setName("");
-      setSubject("");
+      setValues((prev) => ({ ...prev, name: "", subject: "" }));
     } catch (e) {
       setError(cleanError(e, "Failed"));
     } finally {
@@ -163,27 +167,33 @@ export default function Tests() {
 
       <Fab onPress={() => setOpen(true)} />
 
-      <Sheet open={open} onClose={() => setOpen(false)} title="New test">
-        <View style={{ gap: t.spacing.md }}>
-          {batches && batches.length > 0 ? (
-            <View style={{ gap: 6 }}>
-              <AppText variant="micro" color={t.colors.textMuted}>
-                BATCH
-              </AppText>
-              <Segmented
-                value={batchId ?? ""}
-                onChange={(v) => setBatchId(v as Id<"batches">)}
-                options={batches.map((b) => ({ label: b.name, value: b.batchId }))}
-              />
-            </View>
-          ) : null}
-          <Field label="Test name" value={name} onChangeText={setName} placeholder="Math Monthly Test" autoCapitalize="words" />
-          <Field label="Subject" value={subject} onChangeText={setSubject} placeholder="Mathematics" autoCapitalize="words" />
-          <Field label="Total marks" value={totalMarks} onChangeText={setTotalMarks} keyboardType="numeric" />
-          <ErrorNote message={error} />
-          <Button label="Create test" onPress={submitTest} loading={busy} />
-        </View>
-      </Sheet>
+      <FormSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="New test"
+        values={values}
+        onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))}
+        submitLabel="Create test"
+        onSubmit={submitTest}
+        busy={busy}
+        error={error}
+        choices={
+          batches && batches.length > 0
+            ? [
+                {
+                  key: "batchId",
+                  label: "Batch",
+                  options: batches.map((b) => ({ label: b.name, value: b.batchId })),
+                },
+              ]
+            : []
+        }
+        fields={[
+          { key: "name", label: "Test name", placeholder: "Math Monthly Test", autoCapitalize: "words" },
+          { key: "subject", label: "Subject", placeholder: "Mathematics", autoCapitalize: "words" },
+          { key: "totalMarks", label: "Total marks", placeholder: "50", keyboard: "numeric" },
+        ]}
+      />
 
       <Sheet
         open={openTest !== null}

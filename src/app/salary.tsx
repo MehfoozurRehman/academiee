@@ -19,7 +19,7 @@ import {
   Row,
   Segmented,
 } from "../components/ui";
-import { Sheet } from "../components/Sheet";
+import { FormSheet } from "../components/FormSheet";
 import { cleanError } from "../lib/errors";
 
 export default function Salary() {
@@ -38,33 +38,32 @@ export default function Salary() {
   );
 
   const [open, setOpen] = useState(false);
-  const [teacherId, setTeacherId] = useState<Id<"teachers"> | null>(null);
-  const [bonus, setBonus] = useState("0");
-  const [deduction, setDeduction] = useState("0");
+  const [values, setValues] = useState<Record<string, string>>({ teacherId: "", bonus: "0", deduction: "0" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (teachers && teachers.length && !teacherId) setTeacherId(teachers[0].teacherId);
-  }, [teachers, teacherId]);
+    if (teachers && teachers.length && !values.teacherId) {
+      setValues((prev) => ({ ...prev, teacherId: teachers[0].teacherId }));
+    }
+  }, [teachers, values.teacherId]);
 
   async function submit() {
-    if (!session?.academyId || !teacherId) return;
+    if (!session?.academyId || !values.teacherId) return;
 
     setBusy(true);
     setError("");
     try {
       await pay({
         academyId: session.academyId,
-        teacherId,
+        teacherId: values.teacherId as Id<"teachers">,
         month: currentMonthKey(),
-        bonus: Number(bonus) || 0,
-        deduction: Number(deduction) || 0,
+        bonus: Number(values.bonus) || 0,
+        deduction: Number(values.deduction) || 0,
         markPaid: true,
       });
       setOpen(false);
-      setBonus("0");
-      setDeduction("0");
+      setValues((prev) => ({ ...prev, bonus: "0", deduction: "0" }));
     } catch (e) {
       setError(cleanError(e, "Failed"));
     } finally {
@@ -144,38 +143,33 @@ export default function Salary() {
 
       <Fab onPress={() => setOpen(true)} />
 
-      <Sheet open={open} onClose={() => setOpen(false)} title={`Pay salary · ${monthLabel(currentMonthKey())}`}>
-        <View style={{ gap: t.spacing.md }}>
-          {teachers && teachers.length > 0 ? (
-            <View style={{ gap: 6 }}>
-              <AppText variant="micro" color={t.colors.textMuted}>
-                TEACHER
-              </AppText>
-              <Segmented
-                value={teacherId ?? ""}
-                onChange={(v) => setTeacherId(v as Id<"teachers">)}
-                options={teachers.map((x) => ({ label: x.name, value: x.teacherId }))}
-              />
-            </View>
-          ) : (
-            <AppText variant="caption" color={t.colors.textMuted}>
-              Add a teacher first.
-            </AppText>
-          )}
-
-          <View style={{ flexDirection: "row", gap: t.spacing.md }}>
-            <View style={{ flex: 1 }}>
-              <Field label="Bonus" value={bonus} onChangeText={setBonus} keyboardType="numeric" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Field label="Deduction" value={deduction} onChangeText={setDeduction} keyboardType="numeric" />
-            </View>
-          </View>
-
-          <ErrorNote message={error} />
-          <Button label="Record payment" onPress={submit} loading={busy} />
-        </View>
-      </Sheet>
+      <FormSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title={`Pay salary \u00b7 ${monthLabel(currentMonthKey())}`}
+        values={values}
+        onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))}
+        submitLabel="Record payment"
+        onSubmit={submit}
+        busy={busy}
+        error={error}
+        note={teachers && teachers.length === 0 ? "Add a teacher first." : undefined}
+        choices={
+          teachers && teachers.length > 0
+            ? [
+                {
+                  key: "teacherId",
+                  label: "Teacher",
+                  options: teachers.map((x) => ({ label: x.name, value: x.teacherId })),
+                },
+              ]
+            : []
+        }
+        fields={[
+          { key: "bonus", label: "Bonus", placeholder: "0", keyboard: "numeric" },
+          { key: "deduction", label: "Deduction", placeholder: "0", keyboard: "numeric" },
+        ]}
+      />
     </View>
   );
 }
