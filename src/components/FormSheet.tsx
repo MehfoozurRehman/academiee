@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useTheme } from "../theme";
 import { AppText, Button, ErrorNote, Field, Segmented } from "./ui";
 import { Sheet } from "./Sheet";
@@ -10,6 +10,9 @@ export function FormSheet({
   title,
   fields,
   choices = [],
+  toggleGroups = [],
+  selected = {},
+  onToggle,
   values,
   onChange,
   submitLabel,
@@ -33,6 +36,38 @@ export function FormSheet({
               onChange={(value) => onChange(choice.key, value)}
               options={choice.options}
             />
+          </View>
+        ))}
+
+        {toggleGroups.map((group) => (
+          <View key={group.key} style={{ gap: 6 }}>
+            <AppText variant="micro" color={t.colors.textMuted}>
+              {group.label.toUpperCase()}
+            </AppText>
+            <View style={{ flexDirection: "row", gap: 6 }}>
+              {group.options.map((option) => {
+                const on = (selected[group.key] ?? []).includes(option.value);
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => onToggle?.(group.key, option.value)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 8,
+                      borderRadius: t.radius.sm,
+                      alignItems: "center",
+                      backgroundColor: on ? t.colors.accent : t.colors.surface,
+                      borderWidth: 1,
+                      borderColor: on ? t.colors.accent : t.colors.border,
+                    }}
+                  >
+                    <AppText variant="micro" color={on ? t.colors.onAccent : t.colors.textMuted}>
+                      {option.label}
+                    </AppText>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         ))}
 

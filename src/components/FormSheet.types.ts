@@ -13,12 +13,21 @@ export type FormChoice = {
   options: { label: string; value: string }[];
 };
 
+export type FormToggleGroup = {
+  key: string;
+  label: string;
+  options: { label: string; value: string }[];
+};
+
 export type FormSheetProps = {
   open: boolean;
   onClose: () => void;
   title: string;
   fields: FormField[];
   choices?: FormChoice[];
+  toggleGroups?: FormToggleGroup[];
+  selected?: Record<string, string[]>;
+  onToggle?: (key: string, value: string) => void;
   values: Record<string, string>;
   onChange: (key: string, value: string) => void;
   submitLabel: string;

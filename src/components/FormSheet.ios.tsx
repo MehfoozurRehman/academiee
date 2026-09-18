@@ -9,6 +9,7 @@ import {
   Section,
   Text,
   TextField,
+  Toggle,
   useNativeState,
 } from "@expo/ui/swift-ui";
 import {
@@ -77,6 +78,9 @@ export function FormSheet({
   title,
   fields,
   choices = [],
+  toggleGroups = [],
+  selected = {},
+  onToggle,
   values,
   onChange,
   submitLabel,
@@ -119,6 +123,20 @@ export function FormSheet({
                   </Text>
                 ))}
               </Picker>
+            </Section>
+          ))}
+
+          {toggleGroups.map((group) => (
+            <Section key={group.key} title={group.label}>
+              {group.options.map((option) => (
+                <Toggle
+                  key={option.value}
+                  label={option.label}
+                  isOn={(selected[group.key] ?? []).includes(option.value)}
+                  onIsOnChange={() => onToggle?.(group.key, option.value)}
+                  modifiers={[tint(ACCENT)]}
+                />
+              ))}
             </Section>
           ))}
 

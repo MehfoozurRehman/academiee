@@ -16,7 +16,7 @@ import {
   Row,
   Screen,
 } from "../components/ui";
-import { Sheet } from "../components/Sheet";
+import { FormSheet } from "../components/FormSheet";
 import { Wordmark } from "../components/Wordmark";
 import { cleanError } from "../lib/errors";
 
@@ -47,11 +47,12 @@ export default function Settings() {
   const [error, setError] = useState("");
 
   const [fieldSheet, setFieldSheet] = useState(false);
-  const [fieldLabel, setFieldLabel] = useState("");
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({ label: "" });
+  const [fieldError, setFieldError] = useState("");
 
   const [pwSheet, setPwSheet] = useState(false);
-  const [current, setCurrent] = useState("");
-  const [next, setNext] = useState("");
+  const [pwValues, setPwValues] = useState<Record<string, string>>({ current: "", next: "" });
+  const [pwError, setPwError] = useState("");
 
   useEffect(() => {
     if (!academy) return;
@@ -151,57 +152,60 @@ export default function Settings() {
         </View>
       </Screen>
 
-      <Sheet open={fieldSheet} onClose={() => setFieldSheet(false)} title="Add custom field">
-        <View style={{ gap: t.spacing.md }}>
-          <Field label="Label" value={fieldLabel} onChangeText={setFieldLabel} placeholder="Blood Group" autoCapitalize="words" />
-          <Button
-            label="Add field"
-            onPress={async () => {
-              if (!session?.academyId || !fieldLabel.trim()) return;
-              try {
-                await addField({
-                  academyId: session.academyId,
-                  label: fieldLabel.trim(),
-                  key: fieldLabel.trim(),
-                });
-                setFieldLabel("");
-                setFieldSheet(false);
-              } catch (e) {
-                Alert.alert("Failed", cleanError(e, "Unknown error"));
-              }
-            }}
-          />
-        </View>
-      </Sheet>
+      <FormSheet
+        open={fieldSheet}
+        onClose={() => setFieldSheet(false)}
+        title="Add custom field"
+        note="Custom fields appear on every student record."
+        values={fieldValues}
+        onChange={(key, value) => setFieldValues((prev) => ({ ...prev, [key]: value }))}
+        submitLabel="Add field"
+        onSubmit={async () => {
+          if (!session?.academyId || !fieldValues.label?.trim()) return;
+          try {
+            await addField({
+              academyId: session.academyId,
+              label: fieldValues.label.trim(),
+              key: fieldValues.label.trim(),
+            });
+            setFieldValues({ label: "" });
+            setFieldSheet(false);
+          } catch (e) {
+            setFieldError(cleanError(e, "Could not add field"));
+          }
+        }}
+        error={fieldError}
+        fields={[{ key: "label", label: "Label", placeholder: "Blood Group", autoCapitalize: "words" }]}
+      />
 
-      <Sheet open={pwSheet} onClose={() => setPwSheet(false)} title="Change password">
-        <View style={{ gap: t.spacing.md }}>
-          <Field label="Current password" value={current} onChangeText={setCurrent} secure autoCapitalize="none" />
-          <Field label="New password" value={next} onChangeText={setNext} secure autoCapitalize="none" />
-          <Button
-            label="Update password"
-            onPress={async () => {
-              if (!session) return;
-              try {
-                await changePassword({
-                  userId: session.userId,
-                  currentPassword: current,
-                  newPassword: next,
-                });
-                setCurrent("");
-                setNext("");
-                setPwSheet(false);
-                Alert.alert("Password updated");
-              } catch (e) {
-                Alert.alert(
-                  "Failed",
-                  cleanError(e, "Unknown error")
-                );
-              }
-            }}
-          />
-        </View>
-      </Sheet>
+      <FormSheet
+        open={pwSheet}
+        onClose={() => setPwSheet(false)}
+        title="Change password"
+        values={pwValues}
+        onChange={(key, value) => setPwValues((prev) => ({ ...prev, [key]: value }))}
+        submitLabel="Update password"
+        onSubmit={async () => {
+          if (!session) return;
+          try {
+            await changePassword({
+              userId: session.userId,
+              currentPassword: pwValues.current ?? "",
+              newPassword: pwValues.next ?? "",
+            });
+            setPwValues({ current: "", next: "" });
+            setPwSheet(false);
+            Alert.alert("Password updated");
+          } catch (e) {
+            setPwError(cleanError(e, "Could not update password"));
+          }
+        }}
+        error={pwError}
+        fields={[
+          { key: "current", label: "Current password", secure: true, autoCapitalize: "none" },
+          { key: "next", label: "New password", secure: true, autoCapitalize: "none" },
+        ]}
+      />
     </View>
   );
 }
