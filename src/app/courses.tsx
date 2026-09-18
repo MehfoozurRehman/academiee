@@ -17,7 +17,7 @@ import {
   Loader,
   Row,
 } from "../components/ui";
-import { Sheet } from "../components/Sheet";
+import { FormSheet } from "../components/FormSheet";
 import { cleanError } from "../lib/errors";
 
 export default function Courses() {
@@ -32,17 +32,15 @@ export default function Courses() {
   );
 
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [fee, setFee] = useState("");
-  const [months, setMonths] = useState("");
+  const [values, setValues] = useState<Record<string, string>>({ name: "", fee: "", months: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   async function submit() {
     if (!session?.academyId) return;
 
-    const monthlyFee = Number(fee);
-    if (!name.trim() || !Number.isFinite(monthlyFee) || monthlyFee <= 0) {
+    const monthlyFee = Number(values.fee);
+    if (!values.name?.trim() || !Number.isFinite(monthlyFee) || monthlyFee <= 0) {
       setError("Enter a course name and a valid monthly fee");
       return;
     }
@@ -52,14 +50,12 @@ export default function Courses() {
     try {
       await create({
         academyId: session.academyId,
-        name: name.trim(),
+        name: values.name.trim(),
         monthlyFee,
-        durationMonths: Number(months) || undefined,
+        durationMonths: Number(values.months) || undefined,
       });
       setOpen(false);
-      setName("");
-      setFee("");
-      setMonths("");
+      setValues({ name: "", fee: "", months: "" });
     } catch (e) {
       setError(cleanError(e, "Failed"));
     } finally {
@@ -139,15 +135,22 @@ export default function Courses() {
 
       <Fab onPress={() => setOpen(true)} />
 
-      <Sheet open={open} onClose={() => setOpen(false)} title="Add course">
-        <View style={{ gap: t.spacing.md }}>
-          <Field label="Course name" value={name} onChangeText={setName} placeholder="FSc Pre-Medical" autoCapitalize="words" />
-          <Field label="Monthly fee" value={fee} onChangeText={setFee} placeholder="12000" keyboardType="numeric" suffix="PKR" />
-          <Field label="Duration (months)" value={months} onChangeText={setMonths} placeholder="12" keyboardType="numeric" />
-          <ErrorNote message={error} />
-          <Button label="Add course" onPress={submit} loading={busy} />
-        </View>
-      </Sheet>
+      <FormSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Add course"
+        values={values}
+        onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))}
+        submitLabel="Add course"
+        onSubmit={submit}
+        busy={busy}
+        error={error}
+        fields={[
+          { key: "name", label: "Course name", placeholder: "FSc Pre-Medical", autoCapitalize: "words" },
+          { key: "fee", label: "Monthly fee", placeholder: "12000", keyboard: "numeric" },
+          { key: "months", label: "Duration in months", placeholder: "12", keyboard: "numeric" },
+        ]}
+      />
     </View>
   );
 }
