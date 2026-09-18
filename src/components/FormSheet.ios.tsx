@@ -3,10 +3,12 @@ import {
   BottomSheet,
   Button,
   Form,
+  HStack,
   Host,
   Picker,
   SecureField,
   Section,
+  Spacer,
   Text,
   TextField,
   Toggle,
@@ -17,6 +19,7 @@ import {
   foregroundColor,
   frame,
   keyboardType,
+  multilineTextAlignment,
   pickerStyle,
   tag,
   textInputAutocapitalization,
@@ -53,22 +56,32 @@ function NativeField({
     onChange(text);
   };
 
-  if (field.secure) {
-    return (
-      <SecureField text={state} placeholder={field.label} onTextChange={handleChange} />
-    );
-  }
-
-  return (
+  const input = field.secure ? (
+    <SecureField
+      text={state}
+      placeholder={field.placeholder ?? field.label}
+      onTextChange={handleChange}
+      modifiers={[multilineTextAlignment("trailing")]}
+    />
+  ) : (
     <TextField
       text={state}
-      placeholder={field.label}
+      placeholder={field.placeholder ?? field.label}
       onTextChange={handleChange}
       modifiers={[
         keyboardType(field.keyboard ?? "default"),
         textInputAutocapitalization(CAPITALIZATION[field.autoCapitalize ?? "sentences"]),
+        multilineTextAlignment("trailing"),
       ]}
     />
+  );
+
+  return (
+    <HStack>
+      <Text>{field.label}</Text>
+      <Spacer />
+      {input}
+    </HStack>
   );
 }
 
