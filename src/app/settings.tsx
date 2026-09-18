@@ -16,7 +16,7 @@ import {
   Row,
   Screen,
 } from "../components/ui";
-import { Sheet } from "../components/PaymentSheet";
+import { Sheet } from "../components/Sheet";
 import { Wordmark } from "../components/Wordmark";
 import { cleanError } from "../lib/errors";
 

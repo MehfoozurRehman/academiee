@@ -18,7 +18,7 @@ import {
   Loader,
   Row,
 } from "../components/ui";
-import { Sheet } from "../components/PaymentSheet";
+import { Sheet } from "../components/Sheet";
 import { cleanError } from "../lib/errors";
 
 export default function Teachers() {
