@@ -1,27 +1,15 @@
-import { Host, Column, Text, Button } from "@expo/ui";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { Redirect } from "expo-router";
+import { useSession } from "../context/session";
+import { Loader } from "../components/ui";
 
 export default function Index() {
-  const health = useQuery(api.health.status);
+  const { session, ready, onboarded } = useSession();
 
-  return (
-    <Host style={{ width: "100%", height: "100%" }}>
-      <Column spacing={16} alignment="center" style={{ padding: 24 }}>
-        <Text textStyle={{ fontSize: 28, fontWeight: "700" }}>Academy OS</Text>
+  if (!ready) return <Loader />;
+  if (!session && !onboarded) return <Redirect href="/onboarding" />;
+  if (!session) return <Redirect href="/login" />;
+  if (session.role === "admin") return <Redirect href="/admin" />;
+  if (!session.academyId) return <Redirect href="/select-academy" />;
 
-        <Text textStyle={{ fontSize: 16, color: health ? "#16a34a" : "#a1a1aa" }}>
-          {health ? "Connected to Convex" : "Connecting..."}
-        </Text>
-
-        <Text textStyle={{ fontSize: 15 }}>
-          {health
-            ? `${health.academyCount} academies · ${health.userCount} users`
-            : " "}
-        </Text>
-
-        <Button variant="filled" onPress={() => {}} label="Add academy" />
-      </Column>
-    </Host>
-  );
+  return <Redirect href="/dashboard" />;
 }
