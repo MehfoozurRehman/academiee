@@ -13,11 +13,16 @@ import type * as attendance from "../attendance.js";
 import type * as auth from "../auth.js";
 import type * as batches from "../batches.js";
 import type * as courses from "../courses.js";
+import type * as customFields from "../customFields.js";
 import type * as expenses from "../expenses.js";
 import type * as fees from "../fees.js";
 import type * as health from "../health.js";
+import type * as recycleBin from "../recycleBin.js";
+import type * as salaries from "../salaries.js";
 import type * as students from "../students.js";
 import type * as teachers from "../teachers.js";
+import type * as tests from "../tests.js";
+import type * as timetable from "../timetable.js";
 
 import type {
   ApiFromModules,
@@ -31,11 +36,16 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   batches: typeof batches;
   courses: typeof courses;
+  customFields: typeof customFields;
   expenses: typeof expenses;
   fees: typeof fees;
   health: typeof health;
+  recycleBin: typeof recycleBin;
+  salaries: typeof salaries;
   students: typeof students;
   teachers: typeof teachers;
+  tests: typeof tests;
+  timetable: typeof timetable;
 }>;
 
 /**

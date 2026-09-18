@@ -6,75 +6,57 @@ export const createCourse = mutation({
     academyId: v.id("academies"),
     name: v.string(),
     description: v.optional(v.string()),
-    level: v.optional(v.string()),
-    durationWeeks: v.optional(v.number()),
+    durationMonths: v.optional(v.number()),
+    monthlyFee: v.number(),
   },
   async handler(ctx, args) {
     const courseId = await ctx.db.insert("courses", {
-      academyId: args.academyId,
-      name: args.name,
-      description: args.description,
-      level: args.level,
-      durationWeeks: args.durationWeeks,
+      ...args,
       status: "active",
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
 
-    return {
-      courseId,
-      name: args.name,
-      level: args.level,
-    };
+    return { courseId, name: args.name };
   },
 });
 
-export const getCourses = query({
-  args: {
-    academyId: v.id("academies"),
-    status: v.optional(v.string()),
-  },
+export const listCourses = query({
+  args: { academyId: v.id("academies") },
   async handler(ctx, args) {
-    let query = ctx.db
+    const courses = await ctx.db
       .query("courses")
-      .withIndex("by_academyId", (q) => q.eq("academyId", args.academyId));
+      .withIndex("by_academy_deleted", (q) =>
+        q.eq("academyId", args.academyId).eq("deletedAt", undefined)
+      )
+      .collect();
 
-    const courses = await query.collect();
+    return Promise.all(
+      courses.map(async (c) => {
+        const batches = await ctx.db
+          .query("batches")
+          .withIndex("by_courseId", (q) => q.eq("courseId", c._id))
+          .collect();
 
-    let filtered = courses;
-    if (args.status) {
-      filtered = filtered.filter((c) => c.status === args.status);
-    }
+        const liveBatches = batches.filter((b) => b.deletedAt === undefined);
 
-    return filtered.map((c) => ({
-      courseId: c._id,
-      name: c.name,
-      description: c.description,
-      level: c.level,
-      durationWeeks: c.durationWeeks,
-      status: c.status,
-    }));
-  },
-});
+        const studentCount = liveBatches.reduce(
+          (sum, b) => sum + b.currentStudents,
+          0
+        );
 
-export const getCourse = query({
-  args: {
-    courseId: v.id("courses"),
-  },
-  async handler(ctx, args) {
-    const course = await ctx.db.get(args.courseId);
-    if (!course) {
-      throw new Error("Course not found");
-    }
-
-    return {
-      courseId: course._id,
-      name: course.name,
-      description: course.description,
-      level: course.level,
-      durationWeeks: course.durationWeeks,
-      status: course.status,
-    };
+        return {
+          courseId: c._id,
+          name: c.name,
+          description: c.description,
+          durationMonths: c.durationMonths,
+          monthlyFee: c.monthlyFee,
+          batchCount: liveBatches.length,
+          studentCount,
+          status: c.status,
+        };
+      })
+    );
   },
 });
 
@@ -83,42 +65,33 @@ export const updateCourse = mutation({
     courseId: v.id("courses"),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
-    level: v.optional(v.string()),
-    durationWeeks: v.optional(v.number()),
+    durationMonths: v.optional(v.number()),
+    monthlyFee: v.optional(v.number()),
     status: v.optional(v.union(v.literal("active"), v.literal("inactive"))),
   },
   async handler(ctx, args) {
-    const course = await ctx.db.get(args.courseId);
+    const { courseId, ...fields } = args;
+
+    const course = await ctx.db.get(courseId);
     if (!course) {
       throw new Error("Course not found");
     }
 
-    const updates: Record<string, any> = {
-      updatedAt: Date.now(),
-    };
+    const updates: Record<string, unknown> = { updatedAt: Date.now() };
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== undefined) updates[key] = value;
+    }
 
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.level !== undefined) updates.level = args.level;
-    if (args.durationWeeks !== undefined) updates.durationWeeks = args.durationWeeks;
-    if (args.status !== undefined) updates.status = args.status;
-
-    await ctx.db.patch(args.courseId, updates);
-
-    return {
-      courseId: args.courseId,
-      message: "Course updated successfully",
-    };
+    await ctx.db.patch(courseId, updates);
+    return { courseId };
   },
 });
 
 export const deleteCourse = mutation({
-  args: {
-    courseId: v.id("courses"),
-  },
+  args: { courseId: v.id("courses") },
   async handler(ctx, args) {
     const course = await ctx.db.get(args.courseId);
-    if (!course) {
+    if (!course || course.deletedAt !== undefined) {
       throw new Error("Course not found");
     }
 
@@ -127,14 +100,14 @@ export const deleteCourse = mutation({
       .withIndex("by_courseId", (q) => q.eq("courseId", args.courseId))
       .collect();
 
-    for (const batch of batches) {
-      await ctx.db.delete(batch._id);
+    const liveBatches = batches.filter((b) => b.deletedAt === undefined);
+    if (liveBatches.length > 0) {
+      throw new Error(
+        `Delete the ${liveBatches.length} batch(es) using this course first`
+      );
     }
 
-    await ctx.db.delete(args.courseId);
-
-    return {
-      message: "Course deleted successfully",
-    };
+    await ctx.db.patch(args.courseId, { deletedAt: Date.now() });
+    return { courseId: args.courseId };
   },
 });
