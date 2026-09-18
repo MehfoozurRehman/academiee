@@ -62,13 +62,23 @@ export const radius = {
 };
 
 export const typography = {
-  display: { fontSize: 32, fontWeight: (ios ? "700" : "600") as "700" | "600", letterSpacing: ios ? 0.37 : 0 },
-  title: { fontSize: 24, fontWeight: (ios ? "700" : "600") as "700" | "600", letterSpacing: ios ? 0.35 : 0 },
-  heading: { fontSize: 18, fontWeight: "600" as const, letterSpacing: 0 },
-  body: { fontSize: 16, fontWeight: "400" as const },
-  callout: { fontSize: 15, fontWeight: "500" as const },
-  caption: { fontSize: 13, fontWeight: "400" as const },
-  micro: { fontSize: 11, fontWeight: "600" as const, letterSpacing: ios ? 0 : 0.5 },
+  display: {
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: "700" as const,
+    letterSpacing: ios ? 0.34 : -0.2,
+  },
+  title: {
+    fontSize: 20,
+    lineHeight: 25,
+    fontWeight: "700" as const,
+    letterSpacing: ios ? 0.3 : -0.1,
+  },
+  heading: { fontSize: 16, lineHeight: 21, fontWeight: "600" as const },
+  body: { fontSize: 15, lineHeight: 20, fontWeight: "400" as const },
+  callout: { fontSize: 14, lineHeight: 19, fontWeight: "500" as const },
+  caption: { fontSize: 12.5, lineHeight: 17, fontWeight: "400" as const },
+  micro: { fontSize: 10.5, lineHeight: 14, fontWeight: "600" as const, letterSpacing: 0.6 },
 };
 
 export const elevation = ios

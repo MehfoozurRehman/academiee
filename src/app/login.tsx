@@ -7,6 +7,7 @@ import { useSession } from "../context/session";
 import { useTheme } from "../theme";
 import { AppText, Button, ErrorNote, Field, Screen } from "../components/ui";
 import { Mark } from "../components/Wordmark";
+import { cleanError } from "../lib/errors";
 
 export default function Login() {
   const t = useTheme();
@@ -43,7 +44,7 @@ export default function Login() {
       else if (result.academyCount === 0) router.replace("/create-academy");
       else router.replace("/select-academy");
     } catch (e) {
-      setError(e instanceof Error ? e.message.replace(/^.*Uncaught Error:\s*/, "") : "Sign in failed");
+      setError(cleanError(e, "Sign in failed"));
     } finally {
       setBusy(false);
     }

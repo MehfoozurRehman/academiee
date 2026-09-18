@@ -18,6 +18,7 @@ import {
   Row,
 } from "../components/ui";
 import { Sheet } from "../components/PaymentSheet";
+import { cleanError } from "../lib/errors";
 
 export default function Teachers() {
   const t = useTheme();
@@ -68,7 +69,7 @@ export default function Teachers() {
       setSubject("");
       setSalary("");
     } catch (e) {
-      setError(e instanceof Error ? e.message.replace(/^.*Uncaught Error:\s*/, "") : "Failed");
+      setError(cleanError(e, "Failed"));
     } finally {
       setBusy(false);
     }
@@ -84,7 +85,7 @@ export default function Teachers() {
           try {
             await remove({ teacherId: teacherId as never });
           } catch (e) {
-            Alert.alert("Could not delete", e instanceof Error ? e.message : "Unknown error");
+            Alert.alert("Could not delete", cleanError(e, "Unknown error"));
           }
         },
       },

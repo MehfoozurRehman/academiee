@@ -12,6 +12,7 @@ import {
   Loader,
   Row,
 } from "../components/ui";
+import { cleanError } from "../lib/errors";
 
 const LABEL: Record<string, string> = {
   students: "Student",
@@ -48,7 +49,7 @@ export default function RecycleBin() {
           try {
             await restore({ table: table as never, id });
           } catch (e) {
-            Alert.alert("Could not restore", e instanceof Error ? e.message : "Unknown error");
+            Alert.alert("Could not restore", cleanError(e, "Unknown error"));
           }
         },
       },
@@ -59,7 +60,7 @@ export default function RecycleBin() {
           try {
             await purge({ table: table as never, id });
           } catch (e) {
-            Alert.alert("Could not delete", e instanceof Error ? e.message : "Unknown error");
+            Alert.alert("Could not delete", cleanError(e, "Unknown error"));
           }
         },
       },

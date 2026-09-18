@@ -16,6 +16,7 @@ import {
   Screen,
   Segmented,
 } from "../../components/ui";
+import { cleanError } from "../../lib/errors";
 
 type Status = "present" | "absent" | "late";
 
@@ -89,7 +90,7 @@ export default function Attendance() {
         `${result.created} new, ${result.updated} updated for ${date}.`
       );
     } catch (e) {
-      Alert.alert("Could not save", e instanceof Error ? e.message : "Unknown error");
+      Alert.alert("Could not save", cleanError(e, "Unknown error"));
     } finally {
       setBusy(false);
     }

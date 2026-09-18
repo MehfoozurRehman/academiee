@@ -6,6 +6,7 @@ import { api } from "../../convex/_generated/api";
 import { useSession } from "../context/session";
 import { useTheme } from "../theme";
 import { AppBar, AppText, Button, ErrorNote, Field, Screen } from "../components/ui";
+import { cleanError } from "../lib/errors";
 
 export default function CreateAcademy() {
   const t = useTheme();
@@ -51,7 +52,7 @@ export default function CreateAcademy() {
       router.replace("/dashboard");
     } catch (e) {
       setError(
-        e instanceof Error ? e.message.replace(/^.*Uncaught Error:\s*/, "") : "Could not create academy"
+        cleanError(e, "Could not create academy")
       );
     } finally {
       setBusy(false);

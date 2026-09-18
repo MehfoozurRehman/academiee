@@ -19,6 +19,7 @@ import {
   Segmented,
 } from "../components/ui";
 import { Sheet } from "../components/PaymentSheet";
+import { cleanError } from "../lib/errors";
 
 const CATEGORIES = ["Rent", "Salary", "Electricity", "Internet", "Maintenance", "Other"];
 
@@ -64,7 +65,7 @@ export default function Expenses() {
       setDescription("");
       setAmount("");
     } catch (e) {
-      setError(e instanceof Error ? e.message.replace(/^.*Uncaught Error:\s*/, "") : "Failed");
+      setError(cleanError(e, "Failed"));
     } finally {
       setBusy(false);
     }

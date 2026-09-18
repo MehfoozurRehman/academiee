@@ -17,6 +17,7 @@ import {
   Row,
 } from "../components/ui";
 import { Sheet } from "../components/PaymentSheet";
+import { cleanError } from "../lib/errors";
 
 export default function Courses() {
   const t = useTheme();
@@ -59,7 +60,7 @@ export default function Courses() {
       setFee("");
       setMonths("");
     } catch (e) {
-      setError(e instanceof Error ? e.message.replace(/^.*Uncaught Error:\s*/, "") : "Failed");
+      setError(cleanError(e, "Failed"));
     } finally {
       setBusy(false);
     }
@@ -105,7 +106,7 @@ export default function Courses() {
                         } catch (e) {
                           Alert.alert(
                             "Could not delete",
-                            e instanceof Error ? e.message : "Unknown error"
+                            cleanError(e, "Unknown error")
                           );
                         }
                       },

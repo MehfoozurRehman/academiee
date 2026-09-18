@@ -21,6 +21,7 @@ import {
   Segmented,
 } from "../components/ui";
 import { Sheet } from "../components/PaymentSheet";
+import { cleanError } from "../lib/errors";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -82,7 +83,7 @@ export default function Timetable() {
       setOpen(false);
       setSubject("");
     } catch (e) {
-      setError(e instanceof Error ? e.message.replace(/^.*Uncaught Error:\s*/, "") : "Failed");
+      setError(cleanError(e, "Failed"));
     } finally {
       setBusy(false);
     }
