@@ -16,6 +16,7 @@ import {
   Screen,
   type Tone,
 } from "../../components/ui";
+import { cleanError } from "../../lib/errors";
 
 const TONE: Record<string, Tone> = {
   paid: "success",
@@ -65,7 +66,7 @@ export default function StudentDetail() {
               await remove({ studentId });
               router.back();
             } catch (e) {
-              Alert.alert("Could not delete", e instanceof Error ? e.message : "Unknown error");
+              Alert.alert("Could not delete", cleanError(e, "Unknown error"));
             }
           },
         },

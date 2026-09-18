@@ -20,6 +20,7 @@ import {
   Segmented,
 } from "../components/ui";
 import { Sheet } from "../components/PaymentSheet";
+import { cleanError } from "../lib/errors";
 
 export default function Salary() {
   const t = useTheme();
@@ -65,7 +66,7 @@ export default function Salary() {
       setBonus("0");
       setDeduction("0");
     } catch (e) {
-      setError(e instanceof Error ? e.message.replace(/^.*Uncaught Error:\s*/, "") : "Failed");
+      setError(cleanError(e, "Failed"));
     } finally {
       setBusy(false);
     }
@@ -127,7 +128,7 @@ export default function Salary() {
                               } catch (e) {
                                 Alert.alert(
                                   "Failed",
-                                  e instanceof Error ? e.message : "Unknown error"
+                                  cleanError(e, "Unknown error")
                                 );
                               }
                             },

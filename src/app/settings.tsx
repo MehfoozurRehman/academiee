@@ -18,6 +18,7 @@ import {
 } from "../components/ui";
 import { Sheet } from "../components/PaymentSheet";
 import { Wordmark } from "../components/Wordmark";
+import { cleanError } from "../lib/errors";
 
 export default function Settings() {
   const t = useTheme();
@@ -78,7 +79,7 @@ export default function Settings() {
       });
       Alert.alert("Saved", "Academy details updated.");
     } catch (e) {
-      setError(e instanceof Error ? e.message.replace(/^.*Uncaught Error:\s*/, "") : "Failed");
+      setError(cleanError(e, "Failed"));
     } finally {
       setBusy(false);
     }
@@ -166,7 +167,7 @@ export default function Settings() {
                 setFieldLabel("");
                 setFieldSheet(false);
               } catch (e) {
-                Alert.alert("Failed", e instanceof Error ? e.message : "Unknown error");
+                Alert.alert("Failed", cleanError(e, "Unknown error"));
               }
             }}
           />
@@ -194,9 +195,7 @@ export default function Settings() {
               } catch (e) {
                 Alert.alert(
                   "Failed",
-                  e instanceof Error
-                    ? e.message.replace(/^.*Uncaught Error:\s*/, "")
-                    : "Unknown error"
+                  cleanError(e, "Unknown error")
                 );
               }
             }}
