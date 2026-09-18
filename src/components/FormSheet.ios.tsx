@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   BottomSheet,
   Button,
@@ -16,6 +16,8 @@ import {
   foregroundColor,
   frame,
   keyboardType,
+  pickerStyle,
+  tag,
   textInputAutocapitalization,
   tint,
 } from "@expo/ui/swift-ui/modifiers";
@@ -39,14 +41,20 @@ function NativeField({
   onChange: (text: string) => void;
 }) {
   const state = useNativeState(initial);
+  const edited = useRef(false);
 
   useEffect(() => {
-    if (state.get() !== initial) state.set(initial);
-  }, []);
+    if (!edited.current && state.get() !== initial) state.set(initial);
+  }, [initial]);
+
+  const handleChange = (text: string) => {
+    edited.current = true;
+    onChange(text);
+  };
 
   if (field.secure) {
     return (
-      <SecureField text={state} placeholder={field.label} onTextChange={onChange} />
+      <SecureField text={state} placeholder={field.label} onTextChange={handleChange} />
     );
   }
 
@@ -54,7 +62,7 @@ function NativeField({
     <TextField
       text={state}
       placeholder={field.label}
-      onTextChange={onChange}
+      onTextChange={handleChange}
       modifiers={[
         keyboardType(field.keyboard ?? "default"),
         textInputAutocapitalization(CAPITALIZATION[field.autoCapitalize ?? "sentences"]),
@@ -101,11 +109,14 @@ export function FormSheet({
             <Section key={choice.key} title={choice.label}>
               <Picker
                 label={choice.label}
+                modifiers={[pickerStyle("menu"), tint(ACCENT)]}
                 selection={values[choice.key] ?? choice.options[0]?.value ?? ""}
                 onSelectionChange={(value) => onChange(choice.key, String(value))}
               >
                 {choice.options.map((option) => (
-                  <Text key={option.value}>{option.label}</Text>
+                  <Text key={option.value} modifiers={[tag(option.value)]}>
+                    {option.label}
+                  </Text>
                 ))}
               </Picker>
             </Section>
