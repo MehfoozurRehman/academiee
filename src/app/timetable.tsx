@@ -120,7 +120,7 @@ export default function Timetable() {
                     title={`${s.startTime}–${s.endTime}  ${s.subject}`}
                     subtitle={`${s.batchName} · ${s.teacherName}`}
                     last={i === group.items.length - 1}
-                    onPress={() =>
+                    onDelete={() =>
                       Alert.alert("Remove slot?", `${s.subject} on ${s.day}`, [
                         { text: "Cancel", style: "cancel" },
                         {
