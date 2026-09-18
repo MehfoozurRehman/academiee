@@ -127,9 +127,19 @@ export default function Tests() {
       {tests.length === 0 ? (
         <EmptyState
           title="No tests yet"
-          message="Create a test, then enter marks for the batch."
-          actionLabel="Add test"
-          onAction={() => setOpen(true)}
+          message={
+            batches !== undefined && batches.length === 0
+              ? "A test belongs to a batch. Create a batch first."
+              : "Create a test, then enter marks for the batch."
+          }
+          actionLabel={
+            batches !== undefined && batches.length === 0 ? "Go to batches" : "Add test"
+          }
+          onAction={
+            batches !== undefined && batches.length === 0
+              ? () => router.push("/batches")
+              : () => setOpen(true)
+          }
         />
       ) : (
         <FlatList

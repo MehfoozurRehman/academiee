@@ -104,7 +104,9 @@ export default function Batches() {
     }
   }
 
-  const blocked = (courses?.length ?? 0) === 0 || (teachers?.length ?? 0) === 0;
+  const needsCourse = courses !== undefined && courses.length === 0;
+  const needsTeacher = teachers !== undefined && teachers.length === 0;
+  const blocked = needsCourse || needsTeacher;
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
@@ -116,12 +118,24 @@ export default function Batches() {
         <EmptyState
           title="No batches yet"
           message={
-            blocked
-              ? "Add at least one course and one teacher first — a batch needs both."
-              : "Batches are the classes students join."
+            needsCourse && needsTeacher
+              ? "A batch needs a course and a teacher. Add one of each first."
+              : needsCourse
+                ? "A batch needs a course. Add one first."
+                : needsTeacher
+                  ? "A batch needs a teacher. Add one first."
+                  : "Batches are the classes students join."
           }
-          actionLabel={blocked ? undefined : "Add batch"}
-          onAction={blocked ? undefined : () => setOpen(true)}
+          actionLabel={
+            needsCourse ? "Add a course" : needsTeacher ? "Add a teacher" : "Add batch"
+          }
+          onAction={
+            needsCourse
+              ? () => router.push("/courses")
+              : needsTeacher
+                ? () => router.push("/teachers")
+                : () => setOpen(true)
+          }
         />
       ) : (
         <FlatList

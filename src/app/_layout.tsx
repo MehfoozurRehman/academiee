@@ -4,6 +4,7 @@ import { useColorScheme } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { SessionProvider } from "../context/session";
+import { SessionGuard } from "../context/SessionGuard";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
@@ -16,6 +17,7 @@ export default function RootLayout() {
     <ConvexProvider client={convex}>
       <SafeAreaProvider>
         <SessionProvider>
+          <SessionGuard />
           <StatusBar style={scheme === "dark" ? "light" : "dark"} />
           <Stack
             screenOptions={{
