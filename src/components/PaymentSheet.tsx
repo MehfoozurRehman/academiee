@@ -1,60 +1,14 @@
 import { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, View } from "react-native";
+import { View } from "react-native";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { formatMoney, useTheme } from "../theme";
 import { AppText, Button, ErrorNote, Field, Segmented } from "./ui";
+import { Sheet } from "./Sheet";
 import { cleanError } from "../lib/errors";
 
 const METHODS = ["Cash", "Bank Transfer", "JazzCash", "EasyPaisa"];
-
-export function Sheet({
-  open,
-  onClose,
-  title,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  const t = useTheme();
-
-  return (
-    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>
-        <Pressable style={{ flex: 1 }} onPress={onClose} />
-
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
-          <View
-            style={{
-              backgroundColor: t.colors.bg,
-              borderTopLeftRadius: t.radius.lg + 8,
-              borderTopRightRadius: t.radius.lg + 8,
-              padding: t.spacing.lg,
-              paddingBottom: t.spacing.xxl + 12,
-              gap: t.spacing.lg,
-            }}
-          >
-            <View
-              style={{
-                alignSelf: "center",
-                width: 40,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: t.colors.border,
-              }}
-            />
-            <AppText variant="title">{title}</AppText>
-            {children}
-          </View>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
-  );
-}
 
 export function PaymentSheet({
   open,

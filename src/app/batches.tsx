@@ -20,7 +20,7 @@ import {
   Screen,
   Segmented,
 } from "../components/ui";
-import { Sheet } from "../components/PaymentSheet";
+import { Sheet } from "../components/Sheet";
 import { cleanError } from "../lib/errors";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
