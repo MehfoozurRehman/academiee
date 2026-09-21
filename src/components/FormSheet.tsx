@@ -25,10 +25,10 @@ export function FormSheet({
 
   return (
     <Sheet open={open} onClose={onClose} title={title}>
-      <View style={{ gap: t.spacing.md }}>
+      <View style={{ gap: t.spacing.xl }}>
         {choices.map((choice) => (
-          <View key={choice.key} style={{ gap: 6 }}>
-            <AppText variant="micro" color={t.colors.textMuted}>
+          <View key={choice.key} style={{ gap: t.spacing.sm }}>
+            <AppText variant="micro" color={t.colors.textMuted} style={{ marginLeft: t.spacing.sm }}>
               {choice.label.toUpperCase()}
             </AppText>
             <Segmented
@@ -40,11 +40,11 @@ export function FormSheet({
         ))}
 
         {toggleGroups.map((group) => (
-          <View key={group.key} style={{ gap: 6 }}>
-            <AppText variant="micro" color={t.colors.textMuted}>
+          <View key={group.key} style={{ gap: t.spacing.sm }}>
+            <AppText variant="micro" color={t.colors.textMuted} style={{ marginLeft: t.spacing.sm }}>
               {group.label.toUpperCase()}
             </AppText>
-            <View style={{ flexDirection: "row", gap: 6 }}>
+            <View style={{ flexDirection: "row", gap: t.spacing.sm }}>
               {group.options.map((option) => {
                 const on = (selected[group.key] ?? []).includes(option.value);
                 return (
@@ -53,15 +53,15 @@ export function FormSheet({
                     onPress={() => onToggle?.(group.key, option.value)}
                     style={{
                       flex: 1,
-                      paddingVertical: 8,
-                      borderRadius: t.radius.sm,
+                      paddingVertical: 10,
+                      borderRadius: t.radius.md,
                       alignItems: "center",
-                      backgroundColor: on ? t.colors.accent : t.colors.surface,
+                      backgroundColor: on ? t.colors.accent : t.colors.surfaceAlt,
                       borderWidth: 1,
                       borderColor: on ? t.colors.accent : t.colors.border,
                     }}
                   >
-                    <AppText variant="micro" color={on ? t.colors.onAccent : t.colors.textMuted}>
+                    <AppText variant="micro" color={on ? t.colors.onAccent : t.colors.textMuted} style={{ fontWeight: "600" }}>
                       {option.label}
                     </AppText>
                   </Pressable>
@@ -71,26 +71,30 @@ export function FormSheet({
           </View>
         ))}
 
-        {fields.map((field) => (
-          <Field
-            key={field.key}
-            label={field.label}
-            value={values[field.key] ?? ""}
-            onChangeText={(text) => onChange(field.key, text)}
-            placeholder={field.placeholder}
-            secure={field.secure}
-            keyboardType={field.keyboard}
-            autoCapitalize={field.autoCapitalize}
-          />
-        ))}
+        {fields.length > 0 ? (
+          <View style={{ gap: t.spacing.sm }}>
+            {fields.map((field, idx) => (
+              <Field
+                key={field.key}
+                label={field.label}
+                value={values[field.key] ?? ""}
+                onChangeText={(text) => onChange(field.key, text)}
+                placeholder={field.placeholder}
+                secure={field.secure}
+                keyboardType={field.keyboard}
+                autoCapitalize={field.autoCapitalize}
+              />
+            ))}
+          </View>
+        ) : null}
 
         {note ? (
-          <AppText variant="caption" color={t.colors.textMuted}>
+          <AppText variant="caption" color={t.colors.textMuted} style={{ marginHorizontal: t.spacing.sm }}>
             {note}
           </AppText>
         ) : null}
 
-        <ErrorNote message={error ?? ""} />
+        {error ? <ErrorNote message={error} /> : null}
 
         <Button label={submitLabel} onPress={onSubmit} loading={busy} />
       </View>
