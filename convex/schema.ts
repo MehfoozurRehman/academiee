@@ -96,7 +96,7 @@ export default defineSchema({
     parentPhone: v.string(),
     email: v.optional(v.string()),
     address: v.optional(v.string()),
-    monthlyFee: v.number(),
+    discount: v.number(),
     admissionDate: v.string(),
     status: v.union(v.literal("active"), v.literal("inactive"), v.literal("graduated")),
     customValues: v.optional(v.record(v.string(), v.string())),

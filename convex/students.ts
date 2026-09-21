@@ -12,7 +12,7 @@ export const createStudent = mutation({
     parentPhone: v.string(),
     email: v.optional(v.string()),
     address: v.optional(v.string()),
-    monthlyFee: v.number(),
+    discount: v.number(),
     admissionDate: v.string(),
     customValues: v.optional(v.record(v.string(), v.string())),
   },
@@ -82,13 +82,14 @@ export const listStudents = query({
           .filter((f) => f.deletedAt === undefined)
           .reduce((sum, f) => sum + f.balance, 0);
 
+        const course = await ctx.db.get(batch?.courseId!);
         return {
           studentId: s._id,
           name: s.name,
           fatherName: s.fatherName,
           parentPhone: s.parentPhone,
           batchName: batch?.name ?? "—",
-          monthlyFee: s.monthlyFee,
+          monthlyFee: course?.monthlyFee ?? 0,
           status: s.status,
           outstanding,
         };
@@ -130,7 +131,8 @@ export const getStudent = query({
       parentPhone: student.parentPhone,
       email: student.email,
       address: student.address,
-      monthlyFee: student.monthlyFee,
+      monthlyFee: course?.monthlyFee ?? 0,
+      discount: student.discount,
       admissionDate: student.admissionDate,
       status: student.status,
       customValues: student.customValues,
@@ -155,7 +157,7 @@ export const updateStudent = mutation({
     parentPhone: v.optional(v.string()),
     email: v.optional(v.string()),
     address: v.optional(v.string()),
-    monthlyFee: v.optional(v.number()),
+    discount: v.optional(v.number()),
     status: v.optional(
       v.union(v.literal("active"), v.literal("inactive"), v.literal("graduated"))
     ),

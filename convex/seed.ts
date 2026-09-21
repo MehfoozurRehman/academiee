@@ -78,15 +78,21 @@ export const seedData = mutation({
     for (let i = 0; i < studentNames.length; i++) {
       const batchId = batchIds[i % batchIds.length];
       const batch = await ctx.db.get(batchId);
-      
+
+      const hasDiscount = Math.random() > 0.8;
+      const discount = hasDiscount ? Math.floor(Math.random() * 2000) + 500 : 0;
+
       const id = await ctx.db.insert("students", {
         academyId: args.academyId,
         batchId,
         name: studentNames[i],
         fatherName: `Father of ${studentNames[i]}`,
+        gender: Math.random() > 0.5 ? "male" : "female",
+        studentPhone: `0300${String(i + 1000).padStart(7, "0")}`,
+        parentPhone: `0300${String(i + 2000).padStart(7, "0")}`,
+        discount,
+        admissionDate: new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
         status: "active",
-        monthlyFee: 5000,
-        phone: `0300${String(i + 1000).padStart(7, "0")}`,
         createdAt: now,
         updatedAt: now,
       });
@@ -112,8 +118,14 @@ export const seedData = mutation({
       const student = await ctx.db.get(studentId);
       if (!student) continue;
 
-      const feeAmount = student.monthlyFee;
-      const discount = Math.random() > 0.7 ? 500 : 0;
+      const batch = await ctx.db.get(student.batchId);
+      if (!batch) continue;
+
+      const course = await ctx.db.get(batch.courseId);
+      if (!course) continue;
+
+      const feeAmount = course.monthlyFee;
+      const discount = student.discount;
       const balance = feeAmount - discount;
 
       let amountPaid = 0;

@@ -64,15 +64,25 @@ export const generateMonthlyFees = mutation({
     for (const student of active) {
       if (alreadyBilled.has(student._id)) continue;
 
+      const batch = await ctx.db.get(student.batchId);
+      if (!batch) continue;
+
+      const course = await ctx.db.get(batch.courseId);
+      if (!course) continue;
+
+      const feeAmount = course.monthlyFee;
+      const discount = student.discount;
+      const balance = feeAmount - discount;
+
       await ctx.db.insert("fees", {
         academyId: args.academyId,
         studentId: student._id,
         month: args.month,
-        feeAmount: student.monthlyFee,
-        discount: 0,
+        feeAmount,
+        discount,
         amountPaid: 0,
-        balance: student.monthlyFee,
-        status: resolveStatus(student.monthlyFee, 0, args.dueDate),
+        balance,
+        status: resolveStatus(balance, 0, args.dueDate),
         dueDate: args.dueDate,
         createdAt: Date.now(),
         updatedAt: Date.now(),
