@@ -4,40 +4,40 @@ const ios = Platform.OS === "ios";
 
 const palette = {
   light: {
-    bg: "#F8F8F8",
+    bg: "#FFFFFF",
     surface: "#FFFFFF",
-    surfaceAlt: "#F2F2F7",
-    border: "#E5E5EA",
+    surfaceAlt: "#F5F5F5",
+    border: "#E8E8E8",
     text: "#000000",
-    textMuted: "#8E8E93",
-    textFaint: "#C7C7CC",
+    textMuted: "#86868B",
+    textFaint: "#D1D1D6",
     accent: "#007AFF",
-    accentSoft: "#EBF5FF",
+    accentSoft: "#F0F7FF",
     onAccent: "#FFFFFF",
     success: "#34C759",
-    successSoft: "#E8F5E9",
+    successSoft: "#F0FDF4",
     warning: "#FF9500",
-    warningSoft: "#FFF3E0",
+    warningSoft: "#FEF7E0",
     danger: "#FF3B30",
-    dangerSoft: "#FFEBEE",
+    dangerSoft: "#FEF1F0",
     info: "#5856D6",
-    infoSoft: "#EDE7F6",
+    infoSoft: "#F7F5FF",
     secondary: "#5AC8FA",
-    secondarySoft: "#E0F7FF",
+    secondarySoft: "#F0FBFF",
   },
   dark: {
     bg: "#000000",
     surface: "#1C1C1E",
     surfaceAlt: "#2C2C2E",
-    border: "#3E3E40",
+    border: "#424245",
     text: "#FFFFFF",
     textMuted: "#A1A1A6",
     textFaint: "#636366",
     accent: "#0A84FF",
-    accentSoft: "#1A3A52",
+    accentSoft: "#0D2A47",
     onAccent: "#FFFFFF",
     success: "#32D74B",
-    successSoft: "#0D3B1F",
+    successSoft: "#0B3D1B",
     warning: "#FF9F0A",
     warningSoft: "#3A2E0B",
     danger: "#FF453A",
@@ -54,14 +54,14 @@ export const spacing = {
   sm: 8,
   md: 12,
   lg: 16,
-  xl: 24,
+  xl: 20,
   xxl: 32,
 };
 
 export const radius = {
-  sm: 10,
-  md: 14,
-  lg: 18,
+  sm: 8,
+  md: 12,
+  lg: 16,
   pill: 999,
 };
 
@@ -89,20 +89,20 @@ export const elevation = ios
   ? {
       card: {
         shadowColor: "#000",
-        shadowOpacity: 0.06,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 1 },
       },
       raised: {
         shadowColor: "#000",
-        shadowOpacity: 0.12,
-        shadowRadius: 20,
-        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 },
       },
     }
   : {
       card: { elevation: 1 },
-      raised: { elevation: 4 },
+      raised: { elevation: 2 },
     };
 
 export type Theme = {

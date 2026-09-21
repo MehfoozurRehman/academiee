@@ -162,11 +162,11 @@ export function Card({
           borderWidth: 1,
           borderColor: t.colors.border,
           overflow: "hidden",
-          shadowColor: "#000",
-          shadowOpacity: t.dark ? 0.4 : 0.08,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 2 },
-          elevation: 3,
+          shadowColor: t.dark ? "#000000" : "transparent",
+          shadowOpacity: t.dark ? 0.3 : 0,
+          shadowRadius: t.dark ? 8 : 0,
+          shadowOffset: { width: 0, height: t.dark ? 2 : 0 },
+          elevation: t.dark ? 2 : 0,
         },
         style,
       ]}
@@ -250,26 +250,21 @@ export function Button({
       android_ripple={{ color: t.colors.accentSoft, radius: 999 }}
       style={({ pressed }) => ({
         backgroundColor: off ? (variant === "ghost" ? "transparent" : colors.bg) : colors.bg,
-        opacity: off ? 0.45 : pressed && t.isIOS ? 0.8 : 1,
-        paddingVertical: compact ? 8 : 12,
+        opacity: off ? 0.5 : pressed && t.isIOS ? 0.8 : 1,
+        paddingVertical: compact ? 8 : 11,
         paddingHorizontal: compact ? t.spacing.md : t.spacing.lg,
-        borderRadius: t.radius.pill,
+        borderRadius: t.radius.md,
         alignItems: "center",
         justifyContent: "center",
         alignSelf: full ? "stretch" : "flex-start",
         flexDirection: "row",
         gap: t.spacing.sm,
-        borderWidth: variant === "ghost" ? 1.5 : 0,
+        borderWidth: variant === "ghost" ? 1 : 0,
         borderColor: variant === "ghost" ? colors.fg : "transparent",
-        shadowColor: "#000",
-        shadowOpacity: variant === "filled" && !off ? 0.15 : 0,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: variant === "filled" && !off ? 3 : 0,
       })}
     >
       {loading ? <ActivityIndicator size="small" color={colors.fg} /> : null}
-      <Text style={{ ...t.typography.callout, fontSize: compact ? 13 : 15, fontWeight: "600", color: off ? colors.fg : colors.fg }}>
+      <Text style={{ ...t.typography.callout, fontSize: compact ? 13 : 15, fontWeight: "600", color: colors.fg }}>
         {label}
       </Text>
     </Pressable>
@@ -462,14 +457,14 @@ export function Avatar({ name, tone }: { name: string; tone?: string }) {
     .toUpperCase();
 
   const colors = [
-    { bg: "#FF6B6B", fg: "#FFFFFF" },
-    { bg: "#4ECDC4", fg: "#FFFFFF" },
-    { bg: "#45B7D1", fg: "#FFFFFF" },
-    { bg: "#96CEB4", fg: "#FFFFFF" },
-    { bg: "#FFEAA7", fg: "#333333" },
-    { bg: "#DDA15E", fg: "#FFFFFF" },
-    { bg: "#BC6C25", fg: "#FFFFFF" },
-    { bg: "#6C5CE7", fg: "#FFFFFF" },
+    { bg: "#FF4444", fg: "#FFFFFF" },
+    { bg: "#4DBE94", fg: "#FFFFFF" },
+    { bg: "#1E90FF", fg: "#FFFFFF" },
+    { bg: "#34C759", fg: "#FFFFFF" },
+    { bg: "#FFB800", fg: "#FFFFFF" },
+    { bg: "#FF9500", fg: "#FFFFFF" },
+    { bg: "#A855F7", fg: "#FFFFFF" },
+    { bg: "#06B6D4", fg: "#FFFFFF" },
   ];
 
   const colorIdx = name.charCodeAt(0) % colors.length;
@@ -478,20 +473,15 @@ export function Avatar({ name, tone }: { name: string; tone?: string }) {
   return (
     <View
       style={{
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: tone ?? color.bg,
         alignItems: "center",
         justifyContent: "center",
-        shadowColor: "#000",
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 3,
       }}
     >
-      <Text style={{ ...t.typography.callout, fontWeight: "700", color: tone ? t.colors.accent : color.fg }}>
+      <Text style={{ ...t.typography.callout, fontWeight: "600", color: color.fg, fontSize: 14 }}>
         {initials}
       </Text>
     </View>
@@ -610,20 +600,20 @@ export function Fab({ onPress, label = "+" }: { onPress: () => void; label?: str
         right: t.spacing.lg,
         bottom: insets.bottom + t.spacing.lg,
         backgroundColor: t.colors.accent,
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         alignItems: "center",
         justifyContent: "center",
-        opacity: pressed && t.isIOS ? 0.85 : 1,
+        opacity: pressed && t.isIOS ? 0.8 : 1,
         shadowColor: t.colors.accent,
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 8,
+        shadowOpacity: t.dark ? 0.4 : 0.2,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 4,
       })}
     >
-      <Text style={{ color: t.colors.onAccent, fontSize: 32, lineHeight: 36, fontWeight: "300" }}>
+      <Text style={{ color: t.colors.onAccent, fontSize: 28, lineHeight: 32, fontWeight: "600" }}>
         {label}
       </Text>
     </Pressable>
