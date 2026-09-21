@@ -36,10 +36,11 @@ export function SheetBody({
         />
       ) : null}
 
-      <View style={{ marginBottom: t.spacing.sm }}>
+      <View style={{ marginBottom: t.spacing.lg, marginTop: t.spacing.sm }}>
         <AppText
           variant="display"
-          style={{ fontSize: 34, fontWeight: "700", lineHeight: 41 }}
+          color={t.colors.text}
+          style={{ fontSize: 42, fontWeight: "800", lineHeight: 50, letterSpacing: -0.5 }}
         >
           {title}
         </AppText>
