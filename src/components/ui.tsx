@@ -299,41 +299,42 @@ export function Field({
       style={{
         flexDirection: "row",
         alignItems: multiline ? "flex-start" : "center",
-        paddingHorizontal: t.spacing.md,
-        paddingVertical: t.spacing.md,
+        paddingHorizontal: t.spacing.lg,
+        paddingVertical: 11,
         gap: t.spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: t.colors.border,
       }}
     >
       {label ? (
-        <Text style={{ ...t.typography.body, color: t.colors.text, minWidth: 100, fontWeight: "500" }}>
+        <Text style={{ fontSize: 16, color: t.colors.text }}>
           {label}
         </Text>
       ) : null}
-      <View style={{ flex: 1 }}>
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={t.colors.textFaint}
-          secureTextEntry={secure}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={false}
-          multiline={multiline}
-          style={{
-            color: t.colors.text,
-            fontSize: 16,
-            paddingVertical: multiline ? 8 : 0,
-            minHeight: multiline ? 76 : undefined,
-            textAlign: "right",
-            textAlignVertical: multiline ? "top" : "center",
-          }}
-        />
-      </View>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder ?? label}
+        placeholderTextColor={t.colors.textFaint}
+        secureTextEntry={secure}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        autoCorrect={false}
+        multiline={multiline}
+        style={{
+          flex: 1,
+          color: t.colors.text,
+          fontSize: 16,
+          paddingVertical: multiline ? 8 : 0,
+          minHeight: multiline ? 76 : undefined,
+          textAlign: "right",
+          textAlignVertical: multiline ? "top" : "center",
+        }}
+      />
       {suffix ? (
-        <Text style={{ ...t.typography.caption, color: t.colors.textMuted }}>{suffix}</Text>
+        <Text style={{ fontSize: 14, color: t.colors.textMuted, marginLeft: t.spacing.sm }}>
+          {suffix}
+        </Text>
       ) : null}
     </View>
   );
