@@ -235,6 +235,17 @@ export const deleteStudent = mutation({
       });
     }
 
+    const fees = await ctx.db
+      .query("fees")
+      .withIndex("by_studentId", (q) => q.eq("studentId", args.studentId))
+      .collect();
+
+    for (const fee of fees) {
+      if (fee.deletedAt === undefined) {
+        await ctx.db.patch(fee._id, { deletedAt: Date.now() });
+      }
+    }
+
     return { studentId: args.studentId };
   },
 });
