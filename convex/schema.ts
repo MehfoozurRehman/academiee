@@ -249,6 +249,17 @@ export default defineSchema({
     .index("by_academyId", ["academyId"])
     .index("by_studentId", ["studentId"]),
 
+  enrollments: defineTable({
+    academyId: v.id("academies"),
+    studentId: v.id("students"),
+    courseId: v.id("courses"),
+    enrolledAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_studentId", ["studentId"])
+    .index("by_courseId", ["courseId"])
+    .index("by_student_course", ["studentId", "courseId"]),
+
   activityLogs: defineTable({
     academyId: v.id("academies"),
     userId: v.id("users"),
