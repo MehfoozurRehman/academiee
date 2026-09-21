@@ -38,6 +38,7 @@ export default function Batches() {
   const t = useTheme();
   const { session } = useSession();
   const create = useMutation(api.batches.createBatch);
+  const update = useMutation(api.batches.updateBatch);
   const remove = useMutation(api.batches.deleteBatch);
 
   const batches = useQuery(
@@ -54,6 +55,7 @@ export default function Batches() {
   );
 
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [values, setValues] = useState<Record<string, string>>({
     name: "",
     courseId: "",
@@ -78,6 +80,29 @@ export default function Batches() {
     }
   }, [teachers, values.teacherId]);
 
+  function openAdd() {
+    setEditingId(null);
+    setValues({ name: "", courseId: courses?.[0]?.courseId || "", teacherId: teachers?.[0]?.teacherId || "", start: "09:00", end: "11:00", capacity: "25" });
+    setDays(["Mon", "Wed", "Fri"]);
+    setError("");
+    setOpen(true);
+  }
+
+  function openEdit(batch: any) {
+    setEditingId(batch.batchId);
+    setValues({
+      name: batch.name,
+      courseId: batch.courseId,
+      teacherId: batch.teacherId,
+      start: batch.startTime,
+      end: batch.endTime,
+      capacity: batch.capacity.toString(),
+    });
+    setDays(batch.days.map((d: string) => Object.entries(FULL).find(([_, v]) => v === d)?.[0] || ""));
+    setError("");
+    setOpen(true);
+  }
+
   async function submit() {
     if (!session?.academyId || !values.courseId || !values.teacherId) {
       setError("A course and a teacher are required");
@@ -91,20 +116,32 @@ export default function Batches() {
     setBusy(true);
     setError("");
     try {
-      await create({
-        academyId: session.academyId,
-        courseId: values.courseId as Id<"courses">,
-        teacherId: values.teacherId as Id<"teachers">,
-        name: values.name.trim(),
-        startTime: values.start,
-        endTime: values.end,
-        days: days.map((d) => FULL[d]),
-        capacity: Number(values.capacity) || 20,
-      });
+      if (editingId) {
+        await update({
+          batchId: editingId as Id<"batches">,
+          name: values.name.trim(),
+          startTime: values.start,
+          endTime: values.end,
+          days: days.map((d) => FULL[d]),
+          capacity: Number(values.capacity) || 20,
+        });
+      } else {
+        await create({
+          academyId: session.academyId,
+          courseId: values.courseId as Id<"courses">,
+          teacherId: values.teacherId as Id<"teachers">,
+          name: values.name.trim(),
+          startTime: values.start,
+          endTime: values.end,
+          days: days.map((d) => FULL[d]),
+          capacity: Number(values.capacity) || 20,
+        });
+      }
       setOpen(false);
+      setEditingId(null);
       setValues((prev) => ({ ...prev, name: "" }));
     } catch (e) {
-      setError(cleanError(e, "Failed"));
+      setError(cleanError(e, editingId ? "Could not update batch" : "Failed"));
     } finally {
       setBusy(false);
     }
@@ -188,31 +225,38 @@ export default function Batches() {
                   <AppText variant="caption" color={t.colors.textMuted}>
                     {item.currentStudents}/{item.capacity} enrolled · {item.seatsLeft} seats left
                   </AppText>
-                  <Pressable
-                    onPress={() =>
-                      Alert.alert("Delete batch?", `${item.name} will move to the recycle bin.`, [
-                        { text: "Cancel", style: "cancel" },
-                        {
-                          text: "Delete",
-                          style: "destructive",
-                          onPress: async () => {
-                            try {
-                              await remove({ batchId: item.batchId });
-                            } catch (e) {
-                              Alert.alert(
-                                "Could not delete",
-                                cleanError(e, "Unknown error")
-                              );
-                            }
+                  <View style={{ flexDirection: "row", gap: 12 }}>
+                    <Pressable onPress={() => openEdit(item)} hitSlop={8}>
+                      <AppText variant="caption" color={t.colors.primary}>
+                        Edit
+                      </AppText>
+                    </Pressable>
+                    <Pressable
+                      onPress={() =>
+                        Alert.alert("Delete batch?", `${item.name} will move to the recycle bin.`, [
+                          { text: "Cancel", style: "cancel" },
+                          {
+                            text: "Delete",
+                            style: "destructive",
+                            onPress: async () => {
+                              try {
+                                await remove({ batchId: item.batchId });
+                              } catch (e) {
+                                Alert.alert(
+                                  "Could not delete",
+                                  cleanError(e, "Unknown error")
+                                );
+                              }
+                            },
                           },
-                        },
-                      ])
-                    }
-                  >
-                    <AppText variant="caption" color={t.colors.danger}>
-                      Delete
-                    </AppText>
-                  </Pressable>
+                        ])
+                      }
+                    >
+                      <AppText variant="caption" color={t.colors.danger}>
+                        Delete
+                      </AppText>
+                    </Pressable>
+                  </View>
                 </View>
               </View>
             </Card>
@@ -220,15 +264,15 @@ export default function Batches() {
         />
       )}
 
-      {!blocked ? <Fab onPress={() => setOpen(true)} /> : null}
+      {!blocked ? <Fab onPress={openAdd} /> : null}
 
       <FormSheet
         open={open}
         onClose={() => setOpen(false)}
-        title="New batch"
+        title={editingId ? "Edit batch" : "New batch"}
         values={values}
         onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))}
-        submitLabel="Create batch"
+        submitLabel={editingId ? "Save changes" : "Create batch"}
         onSubmit={submit}
         busy={busy}
         error={error}

@@ -15,6 +15,7 @@ export default function Teachers() {
   const t = useTheme();
   const { session } = useSession();
   const create = useMutation(api.teachers.createTeacher);
+  const update = useMutation(api.teachers.updateTeacher);
   const remove = useMutation(api.teachers.deleteTeacher);
 
   const teachers = useQuery(
@@ -23,12 +24,32 @@ export default function Teachers() {
   );
 
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [values, setValues] = useState<Record<string, string>>(EMPTY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   function setValue(key: string, value: string) {
     setValues((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function openAdd() {
+    setEditingId(null);
+    setValues(EMPTY);
+    setError("");
+    setOpen(true);
+  }
+
+  function openEdit(teacher: any) {
+    setEditingId(teacher.teacherId);
+    setValues({
+      name: teacher.name,
+      subject: teacher.subject,
+      phone: teacher.phone,
+      salary: teacher.monthlySalary.toString(),
+    });
+    setError("");
+    setOpen(true);
   }
 
   async function submit() {
@@ -47,18 +68,29 @@ export default function Teachers() {
     setBusy(true);
     setError("");
     try {
-      await create({
-        academyId: session.academyId,
-        name: values.name.trim(),
-        phone: values.phone.trim(),
-        subject: values.subject.trim(),
-        monthlySalary,
-        hireDate: todayKey(),
-      });
+      if (editingId) {
+        await update({
+          teacherId: editingId as never,
+          name: values.name.trim(),
+          phone: values.phone.trim(),
+          subject: values.subject.trim(),
+          monthlySalary,
+        });
+      } else {
+        await create({
+          academyId: session.academyId,
+          name: values.name.trim(),
+          phone: values.phone.trim(),
+          subject: values.subject.trim(),
+          monthlySalary,
+          hireDate: todayKey(),
+        });
+      }
       setOpen(false);
+      setEditingId(null);
       setValues(EMPTY);
     } catch (e) {
-      setError(cleanError(e, "Could not add teacher"));
+      setError(cleanError(e, editingId ? "Could not update teacher" : "Could not add teacher"));
     } finally {
       setBusy(false);
     }
@@ -125,11 +157,18 @@ export default function Teachers() {
                   <AppText variant="callout" style={{ fontWeight: "600" } as never}>
                     {formatMoney(item.monthlySalary)}
                   </AppText>
-                  <Pressable onPress={() => confirmDelete(item.teacherId, item.name)} hitSlop={8}>
-                    <AppText variant="caption" color={t.colors.danger}>
-                      Delete
-                    </AppText>
-                  </Pressable>
+                  <View style={{ flexDirection: "row", gap: 12 }}>
+                    <Pressable onPress={() => openEdit(item)} hitSlop={8}>
+                      <AppText variant="caption" color={t.colors.primary}>
+                        Edit
+                      </AppText>
+                    </Pressable>
+                    <Pressable onPress={() => confirmDelete(item.teacherId, item.name)} hitSlop={8}>
+                      <AppText variant="caption" color={t.colors.danger}>
+                        Delete
+                      </AppText>
+                    </Pressable>
+                  </View>
                 </View>
               </View>
             </Card>
@@ -137,15 +176,15 @@ export default function Teachers() {
         />
       )}
 
-      <Fab onPress={() => setOpen(true)} />
+      <Fab onPress={openAdd} />
 
       <FormSheet
         open={open}
         onClose={() => setOpen(false)}
-        title="Add teacher"
+        title={editingId ? "Edit teacher" : "Add teacher"}
         values={values}
         onChange={setValue}
-        submitLabel="Add teacher"
+        submitLabel={editingId ? "Save changes" : "Add teacher"}
         onSubmit={submit}
         busy={busy}
         error={error}
