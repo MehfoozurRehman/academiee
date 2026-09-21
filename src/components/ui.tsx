@@ -250,22 +250,22 @@ export function Button({
       android_ripple={{ color: t.colors.accentSoft, radius: 999 }}
       style={({ pressed }) => ({
         backgroundColor: off ? (variant === "ghost" ? "transparent" : colors.bg) : colors.bg,
-        opacity: off ? 0.5 : pressed && t.isIOS ? 0.75 : 1,
-        paddingVertical: compact ? 12 : 18,
-        paddingHorizontal: compact ? t.spacing.lg : t.spacing.xl,
+        opacity: off ? 0.5 : pressed && t.isIOS ? 0.7 : 1,
+        paddingVertical: compact ? 14 : 20,
+        paddingHorizontal: compact ? t.spacing.xl : t.spacing.xxl,
         borderRadius: t.radius.lg,
         alignItems: "center",
         justifyContent: "center",
         alignSelf: full ? "stretch" : "flex-start",
         flexDirection: "row",
         gap: t.spacing.md,
-        borderWidth: variant === "ghost" ? 1.5 : 0,
+        borderWidth: variant === "ghost" ? 2 : 0,
         borderColor: variant === "ghost" ? colors.fg : "transparent",
-        minHeight: compact ? 44 : 56,
+        minHeight: compact ? 48 : 60,
       })}
     >
       {loading ? <ActivityIndicator size="small" color={colors.fg} /> : null}
-      <Text style={{ ...t.typography.callout, fontSize: compact ? 15 : 18, fontWeight: "700", color: colors.fg }}>
+      <Text style={{ ...t.typography.callout, fontSize: compact ? 16 : 19, fontWeight: "800", color: colors.fg }}>
         {label}
       </Text>
     </Pressable>
