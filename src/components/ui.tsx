@@ -126,10 +126,10 @@ export function AppBar({
       ) : null}
 
       {large ? (
-        <View style={{ marginTop: showControls ? t.spacing.md : 0 }}>
-          <Text style={{ ...t.typography.display, color: t.colors.text, fontWeight: "700" }}>{title}</Text>
+        <View style={{ marginTop: showControls ? t.spacing.md : 0, gap: 4 }}>
+          <Text style={{ fontSize: 34, lineHeight: 41, color: t.colors.text, fontWeight: "700" }}>{title}</Text>
           {subtitle ? (
-            <Text style={{ ...t.typography.callout, color: t.colors.textMuted, marginTop: 4, fontWeight: "500" }}>
+            <Text style={{ ...t.typography.callout, color: t.colors.textMuted, fontWeight: "500" }}>
               {subtitle}
             </Text>
           ) : null}
@@ -250,21 +250,22 @@ export function Button({
       android_ripple={{ color: t.colors.accentSoft, radius: 999 }}
       style={({ pressed }) => ({
         backgroundColor: off ? (variant === "ghost" ? "transparent" : colors.bg) : colors.bg,
-        opacity: off ? 0.5 : pressed && t.isIOS ? 0.8 : 1,
-        paddingVertical: compact ? 8 : 11,
+        opacity: off ? 0.5 : pressed && t.isIOS ? 0.75 : 1,
+        paddingVertical: compact ? 10 : 14,
         paddingHorizontal: compact ? t.spacing.md : t.spacing.lg,
-        borderRadius: t.radius.md,
+        borderRadius: t.radius.lg,
         alignItems: "center",
         justifyContent: "center",
         alignSelf: full ? "stretch" : "flex-start",
         flexDirection: "row",
         gap: t.spacing.sm,
-        borderWidth: variant === "ghost" ? 1 : 0,
+        borderWidth: variant === "ghost" ? 1.5 : 0,
         borderColor: variant === "ghost" ? colors.fg : "transparent",
+        minHeight: compact ? 40 : 50,
       })}
     >
       {loading ? <ActivityIndicator size="small" color={colors.fg} /> : null}
-      <Text style={{ ...t.typography.callout, fontSize: compact ? 13 : 15, fontWeight: "600", color: colors.fg }}>
+      <Text style={{ ...t.typography.callout, fontSize: compact ? 13 : 16, fontWeight: "600", color: colors.fg }}>
         {label}
       </Text>
     </Pressable>
