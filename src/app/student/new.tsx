@@ -72,7 +72,7 @@ export default function NewStudent() {
     setError("");
 
     try {
-      const studentId = await create({
+      const result = await create({
         academyId: session.academyId,
         batchId,
         name: name.trim(),
@@ -86,7 +86,7 @@ export default function NewStudent() {
 
       // Enroll student in selected courses
       for (const courseId of selectedCourses) {
-        await enrollCourse({ studentId, courseId: courseId as never });
+        await enrollCourse({ studentId: result.studentId, courseId: courseId as never });
       }
 
       router.back();
