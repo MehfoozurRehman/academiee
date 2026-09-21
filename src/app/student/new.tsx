@@ -35,9 +35,11 @@ export default function NewStudent() {
   const [gender, setGender] = useState<"male" | "female">("male");
   const [parentPhone, setParentPhone] = useState("");
   const [studentPhone, setStudentPhone] = useState("");
-  const [fee, setFee] = useState("");
+  const [discount, setDiscount] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  const currentBatch = batches?.find((b) => b.batchId === batchId);
 
   useEffect(() => {
     if (batches && batches.length > 0 && !batchId) {
@@ -53,9 +55,9 @@ export default function NewStudent() {
       return;
     }
 
-    const monthlyFee = Number(fee);
-    if (!Number.isFinite(monthlyFee) || monthlyFee <= 0) {
-      setError("Enter a valid monthly fee");
+    const discountAmount = Number(discount);
+    if (!Number.isFinite(discountAmount) || discountAmount < 0) {
+      setError("Enter a valid discount");
       return;
     }
 
@@ -71,7 +73,7 @@ export default function NewStudent() {
         gender,
         parentPhone: parentPhone.trim(),
         studentPhone: studentPhone.trim() || undefined,
-        monthlyFee,
+        discount: discountAmount,
         admissionDate: todayKey(),
       });
       router.back();
@@ -140,7 +142,21 @@ export default function NewStudent() {
 
             <Field label="Parent phone" value={parentPhone} onChangeText={setParentPhone} placeholder="03001112233" keyboardType="phone-pad" />
             <Field label="Student phone" value={studentPhone} onChangeText={setStudentPhone} placeholder="Optional" keyboardType="phone-pad" />
-            <Field label="Monthly fee" value={fee} onChangeText={setFee} placeholder="8000" keyboardType="numeric" suffix="PKR" />
+
+            {currentBatch && (
+              <View style={{ gap: t.spacing.sm, paddingVertical: t.spacing.sm }}>
+                <AppText variant="micro" color={t.colors.textMuted}>
+                  MONTHLY FEE
+                </AppText>
+                <View style={{ paddingHorizontal: t.spacing.md, paddingVertical: t.spacing.sm }}>
+                  <AppText variant="body" color={t.colors.text}>
+                    PKR {currentBatch.monthlyFee?.toLocaleString() || "—"}
+                  </AppText>
+                </View>
+              </View>
+            )}
+
+            <Field label="Discount" value={discount} onChangeText={setDiscount} placeholder="0" keyboardType="numeric" suffix="PKR" />
 
             <ErrorNote message={error} />
 
