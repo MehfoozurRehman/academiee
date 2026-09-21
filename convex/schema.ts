@@ -98,7 +98,7 @@ export default defineSchema({
     address: v.optional(v.string()),
     discount: v.number(),
     admissionDate: v.string(),
-    status: v.union(v.literal("active"), v.literal("inactive"), v.literal("graduated")),
+    status: v.union(v.literal("active"), v.literal("inactive"), v.literal("graduated"), v.literal("left")),
     customValues: v.optional(v.record(v.string(), v.string())),
     deletedAt: v.optional(v.number()),
     createdAt: v.number(),
