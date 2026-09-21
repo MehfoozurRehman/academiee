@@ -299,39 +299,39 @@ export function Field({
       style={{
         flexDirection: "row",
         alignItems: multiline ? "flex-start" : "center",
-        backgroundColor: t.colors.surface,
-        borderRadius: t.radius.md,
-        borderWidth: 1,
-        borderColor: t.colors.border,
         paddingHorizontal: t.spacing.md,
-        paddingVertical: multiline ? t.spacing.md : 0,
+        paddingVertical: t.spacing.md,
         gap: t.spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: t.colors.border,
       }}
     >
       {label ? (
-        <Text style={{ ...t.typography.micro, color: t.colors.textMuted, textTransform: "uppercase", minWidth: 60 }}>
+        <Text style={{ ...t.typography.body, color: t.colors.text, minWidth: 100, fontWeight: "500" }}>
           {label}
         </Text>
       ) : null}
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={t.colors.textFaint}
-        secureTextEntry={secure}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        autoCorrect={false}
-        multiline={multiline}
-        style={{
-          flex: 1,
-          color: t.colors.text,
-          fontSize: 15,
-          paddingVertical: multiline ? 0 : 11,
-          minHeight: multiline ? 76 : undefined,
-          textAlignVertical: multiline ? "top" : "center",
-        }}
-      />
+      <View style={{ flex: 1 }}>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={t.colors.textFaint}
+          secureTextEntry={secure}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={false}
+          multiline={multiline}
+          style={{
+            color: t.colors.text,
+            fontSize: 16,
+            paddingVertical: multiline ? 8 : 0,
+            minHeight: multiline ? 76 : undefined,
+            textAlign: "right",
+            textAlignVertical: multiline ? "top" : "center",
+          }}
+        />
+      </View>
       {suffix ? (
         <Text style={{ ...t.typography.caption, color: t.colors.textMuted }}>{suffix}</Text>
       ) : null}
