@@ -52,7 +52,7 @@ export default function StudentDetail() {
     fatherName: "",
     parentPhone: "",
     studentPhone: "",
-    fee: "",
+    discount: "",
     status: "active",
   });
 
@@ -79,7 +79,7 @@ export default function StudentDetail() {
       fatherName: student.fatherName,
       parentPhone: student.parentPhone,
       studentPhone: student.studentPhone ?? "",
-      fee: student.monthlyFee.toString(),
+      discount: student.discount.toString(),
       status: student.status,
     });
     setEditError("");
@@ -92,9 +92,9 @@ export default function StudentDetail() {
       return;
     }
 
-    const monthlyFee = Number(editValues.fee);
-    if (!Number.isFinite(monthlyFee) || monthlyFee <= 0) {
-      setEditError("Enter a valid monthly fee");
+    const discount = Number(editValues.discount);
+    if (!Number.isFinite(discount) || discount < 0) {
+      setEditError("Enter a valid discount");
       return;
     }
 
@@ -108,7 +108,7 @@ export default function StudentDetail() {
         fatherName: editValues.fatherName.trim(),
         parentPhone: editValues.parentPhone.trim(),
         studentPhone: editValues.studentPhone?.trim() || undefined,
-        monthlyFee,
+        discount,
         status: editValues.status as "active" | "inactive" | "graduated",
       });
       setEditOpen(false);
@@ -320,7 +320,7 @@ export default function StudentDetail() {
           { key: "fatherName", label: "Father name", placeholder: "Muhammad Raza", autoCapitalize: "words" },
           { key: "parentPhone", label: "Parent phone", placeholder: "03001112233", keyboard: "phone-pad" },
           { key: "studentPhone", label: "Student phone", placeholder: "Optional", keyboard: "phone-pad" },
-          { key: "fee", label: "Monthly fee", placeholder: "8000", keyboard: "numeric" },
+          { key: "discount", label: "Discount (scholarship)", placeholder: "0", keyboard: "numeric" },
         ]}
         choices={[
           {
