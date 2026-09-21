@@ -33,6 +33,7 @@ const SECTIONS: { heading: string; items: { label: string; href: string; icon: I
     items: [
       { label: "WhatsApp", href: "/whatsapp", icon: "whatsapp" },
       { label: "Recycle Bin", href: "/recycle-bin", icon: "recycle" },
+      { label: "Seed Sample Data", href: "/seed", icon: "settings" },
       { label: "Settings", href: "/settings", icon: "settings" },
     ],
   },
