@@ -300,9 +300,9 @@ export function Field({
   const t = useTheme();
 
   return (
-    <View style={{ gap: 8 }}>
+    <View style={{ gap: 6 }}>
       {label ? (
-        <Text style={{ ...t.typography.micro, color: t.colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        <Text style={{ ...t.typography.micro, color: t.colors.textMuted, textTransform: "uppercase" }}>
           {label}
         </Text>
       ) : null}
@@ -310,16 +310,11 @@ export function Field({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: t.colors.surfaceAlt,
+          backgroundColor: t.colors.surface,
           borderRadius: t.radius.md,
-          borderWidth: 1.5,
+          borderWidth: 1,
           borderColor: t.colors.border,
           paddingHorizontal: t.spacing.md,
-          shadowColor: "#000",
-          shadowOpacity: 0.04,
-          shadowRadius: 6,
-          shadowOffset: { width: 0, height: 1 },
-          elevation: 1,
         }}
       >
         <TextInput
@@ -335,14 +330,14 @@ export function Field({
           style={{
             flex: 1,
             color: t.colors.text,
-            fontSize: 16,
-            paddingVertical: multiline ? 12 : 13,
-            minHeight: multiline ? 80 : undefined,
+            fontSize: 15,
+            paddingVertical: multiline ? 10 : 11,
+            minHeight: multiline ? 76 : undefined,
             textAlignVertical: multiline ? "top" : "center",
           }}
         />
         {suffix ? (
-          <Text style={{ ...t.typography.caption, color: t.colors.textMuted, fontWeight: "500" }}>{suffix}</Text>
+          <Text style={{ ...t.typography.caption, color: t.colors.textMuted }}>{suffix}</Text>
         ) : null}
       </View>
     </View>
