@@ -169,11 +169,17 @@ export default function NewStudent() {
 
             <Field label="Discount" value={discount} onChangeText={setDiscount} placeholder="0" keyboardType="numeric" suffix="PKR" />
 
-            {courses.length > 0 && (
-              <View style={{ gap: t.spacing.sm }}>
-                <AppText variant="micro" color={t.colors.textMuted}>
-                  COURSES (OPTIONAL)
-                </AppText>
+            <View style={{ gap: t.spacing.sm }}>
+              <AppText variant="micro" color={t.colors.textMuted}>
+                COURSES (OPTIONAL)
+              </AppText>
+              {courses.length === 0 ? (
+                <View style={{ paddingHorizontal: t.spacing.md, paddingVertical: t.spacing.sm }}>
+                  <AppText variant="body" color={t.colors.textMuted}>
+                    No courses available
+                  </AppText>
+                </View>
+              ) : (
                 <View style={{ backgroundColor: t.colors.surface, borderRadius: t.radius.lg, overflow: "hidden" }}>
                   {courses.map((course, idx) => {
                     const selected = selectedCourses.has(course.courseId);
@@ -210,8 +216,8 @@ export default function NewStudent() {
                     );
                   })}
                 </View>
-              </View>
-            )}
+              )}
+            </View>
 
             <ErrorNote message={error} />
 
