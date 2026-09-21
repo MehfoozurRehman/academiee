@@ -295,20 +295,21 @@ export function Field({
   const t = useTheme();
 
   return (
-    <View style={{ gap: 8 }}>
+    <View style={{ gap: 6 }}>
       {label ? (
-        <Text style={{ ...t.typography.micro, color: t.colors.textMuted, textTransform: "uppercase", fontSize: 11, letterSpacing: 0.5 }}>
+        <Text style={{ ...t.typography.micro, color: t.colors.textMuted, textTransform: "uppercase" }}>
           {label}
         </Text>
       ) : null}
       <View
         style={{
           flexDirection: "row",
-          alignItems: multiline ? "flex-start" : "center",
-          backgroundColor: t.colors.surfaceAlt,
+          alignItems: "center",
+          backgroundColor: t.colors.surface,
           borderRadius: t.radius.md,
+          borderWidth: 1,
+          borderColor: t.colors.border,
           paddingHorizontal: t.spacing.md,
-          paddingVertical: multiline ? t.spacing.md : 0,
         }}
       >
         <TextInput
@@ -324,14 +325,14 @@ export function Field({
           style={{
             flex: 1,
             color: t.colors.text,
-            fontSize: 16,
-            paddingVertical: multiline ? 0 : 13,
-            minHeight: multiline ? 100 : undefined,
+            fontSize: 15,
+            paddingVertical: multiline ? 10 : 11,
+            minHeight: multiline ? 76 : undefined,
             textAlignVertical: multiline ? "top" : "center",
           }}
         />
         {suffix ? (
-          <Text style={{ ...t.typography.caption, color: t.colors.textMuted, marginLeft: t.spacing.sm }}>{suffix}</Text>
+          <Text style={{ ...t.typography.caption, color: t.colors.textMuted }}>{suffix}</Text>
         ) : null}
       </View>
     </View>
