@@ -295,46 +295,46 @@ export function Field({
   const t = useTheme();
 
   return (
-    <View style={{ gap: 6 }}>
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: multiline ? "flex-start" : "center",
+        backgroundColor: t.colors.surface,
+        borderRadius: t.radius.md,
+        borderWidth: 1,
+        borderColor: t.colors.border,
+        paddingHorizontal: t.spacing.md,
+        paddingVertical: multiline ? t.spacing.md : 0,
+        gap: t.spacing.md,
+      }}
+    >
       {label ? (
-        <Text style={{ ...t.typography.micro, color: t.colors.textMuted, textTransform: "uppercase" }}>
+        <Text style={{ ...t.typography.micro, color: t.colors.textMuted, textTransform: "uppercase", minWidth: 60 }}>
           {label}
         </Text>
       ) : null}
-      <View
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={t.colors.textFaint}
+        secureTextEntry={secure}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        autoCorrect={false}
+        multiline={multiline}
         style={{
-          flexDirection: "row",
-          alignItems: "center",
-          backgroundColor: t.colors.surface,
-          borderRadius: t.radius.md,
-          borderWidth: 1,
-          borderColor: t.colors.border,
-          paddingHorizontal: t.spacing.md,
+          flex: 1,
+          color: t.colors.text,
+          fontSize: 15,
+          paddingVertical: multiline ? 0 : 11,
+          minHeight: multiline ? 76 : undefined,
+          textAlignVertical: multiline ? "top" : "center",
         }}
-      >
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={t.colors.textFaint}
-          secureTextEntry={secure}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={false}
-          multiline={multiline}
-          style={{
-            flex: 1,
-            color: t.colors.text,
-            fontSize: 15,
-            paddingVertical: multiline ? 10 : 11,
-            minHeight: multiline ? 76 : undefined,
-            textAlignVertical: multiline ? "top" : "center",
-          }}
-        />
-        {suffix ? (
-          <Text style={{ ...t.typography.caption, color: t.colors.textMuted }}>{suffix}</Text>
-        ) : null}
-      </View>
+      />
+      {suffix ? (
+        <Text style={{ ...t.typography.caption, color: t.colors.textMuted }}>{suffix}</Text>
+      ) : null}
     </View>
   );
 }
