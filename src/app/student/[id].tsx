@@ -109,7 +109,7 @@ export default function StudentDetail() {
         parentPhone: editValues.parentPhone.trim(),
         studentPhone: editValues.studentPhone?.trim() || undefined,
         discount,
-        status: editValues.status as "active" | "inactive" | "graduated",
+        status: editValues.status as "active" | "inactive" | "graduated" | "left",
       });
       setEditOpen(false);
     } catch (e) {
@@ -330,6 +330,7 @@ export default function StudentDetail() {
               { label: "Active", value: "active" },
               { label: "Inactive", value: "inactive" },
               { label: "Graduated", value: "graduated" },
+              { label: "Left", value: "left" },
             ],
           },
         ]}
