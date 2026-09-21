@@ -123,6 +123,43 @@ export const recordPayment = mutation({
   },
 });
 
+export const reversePayment = mutation({
+  args: {
+    feeId: v.id("fees"),
+    amount: v.number(),
+  },
+  async handler(ctx, args) {
+    if (args.amount <= 0) {
+      throw new Error("Reversal amount must be greater than zero");
+    }
+
+    const fee = await ctx.db.get(args.feeId);
+    if (!fee || fee.deletedAt !== undefined) {
+      throw new Error("Fee record not found");
+    }
+
+    if (args.amount > fee.amountPaid) {
+      throw new Error(
+        `Reversal amount exceeds the paid amount of ${fee.amountPaid}`
+      );
+    }
+
+    const amountPaid = fee.amountPaid - args.amount;
+    const balance = fee.balance + args.amount;
+
+    await ctx.db.patch(args.feeId, {
+      amountPaid,
+      balance,
+      status: resolveStatus(balance, amountPaid, fee.dueDate),
+      paymentMethod: undefined,
+      paymentDate: undefined,
+      updatedAt: Date.now(),
+    });
+
+    return { feeId: args.feeId, balance, reversalAmount: args.amount };
+  },
+});
+
 export const listFees = query({
   args: {
     academyId: v.id("academies"),
