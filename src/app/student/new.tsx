@@ -57,14 +57,25 @@ export default function NewStudent() {
   async function submit() {
     if (!session?.academyId || !batchId) return;
 
-    if (!name.trim() || !fatherName.trim() || !parentPhone.trim()) {
-      setError("Name, father name and parent phone are required");
-      return;
+    const errors: string[] = [];
+
+    if (!name.trim()) errors.push("Student name is required");
+    if (!fatherName.trim()) errors.push("Father name is required");
+    if (!parentPhone.trim()) errors.push("Parent phone is required");
+    if (parentPhone.trim() && !/^03\d{9}$/.test(parentPhone.trim())) {
+      errors.push("Parent phone must be in format: 03001234567");
+    }
+    if (studentPhone.trim() && !/^03\d{9}$/.test(studentPhone.trim())) {
+      errors.push("Student phone must be in format: 03001234567");
     }
 
     const discountAmount = Number(discount);
-    if (!Number.isFinite(discountAmount) || discountAmount < 0) {
-      setError("Enter a valid discount");
+    if (discount && (!Number.isFinite(discountAmount) || discountAmount < 0)) {
+      errors.push("Discount must be a valid positive number");
+    }
+
+    if (errors.length > 0) {
+      setError(errors.join("\n"));
       return;
     }
 
@@ -80,20 +91,28 @@ export default function NewStudent() {
         gender,
         parentPhone: parentPhone.trim(),
         studentPhone: studentPhone.trim() || undefined,
-        discount: discountAmount,
+        discount: Number.isFinite(discountAmount) ? discountAmount : 0,
         admissionDate: todayKey(),
       });
 
       // Enroll student in selected courses
+      const enrollmentErrors: string[] = [];
       for (const courseId of selectedCourses) {
-        await enrollCourse({ studentId: result.studentId, courseId: courseId as never });
+        try {
+          await enrollCourse({ studentId: result.studentId, courseId: courseId as never });
+        } catch (enrollError) {
+          enrollmentErrors.push(cleanError(enrollError, `Failed to enroll in a course`));
+        }
+      }
+
+      if (enrollmentErrors.length > 0) {
+        setError(`Student added but ${enrollmentErrors.length} course enrollment(s) failed:\n${enrollmentErrors.join("\n")}`);
+        return;
       }
 
       router.back();
     } catch (e) {
-      setError(
-        cleanError(e, "Could not add student")
-      );
+      setError(cleanError(e, "Could not add student"));
     } finally {
       setBusy(false);
     }

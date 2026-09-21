@@ -43,6 +43,11 @@ export const enrollStudentInCourse = mutation({
       throw new Error("Course not found");
     }
 
+    // Validate course belongs to same academy as student
+    if (course.academyId !== student.academyId) {
+      throw new Error("Course does not belong to student's academy");
+    }
+
     const existing = await ctx.db
       .query("enrollments")
       .withIndex("by_student_course", (q) =>
