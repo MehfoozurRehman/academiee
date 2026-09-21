@@ -159,7 +159,7 @@ export const updateStudent = mutation({
     address: v.optional(v.string()),
     discount: v.optional(v.number()),
     status: v.optional(
-      v.union(v.literal("active"), v.literal("inactive"), v.literal("graduated"))
+      v.union(v.literal("active"), v.literal("inactive"), v.literal("graduated"), v.literal("left"))
     ),
     customValues: v.optional(v.record(v.string(), v.string())),
   },
