@@ -251,21 +251,21 @@ export function Button({
       style={({ pressed }) => ({
         backgroundColor: off ? (variant === "ghost" ? "transparent" : colors.bg) : colors.bg,
         opacity: off ? 0.5 : pressed && t.isIOS ? 0.75 : 1,
-        paddingVertical: compact ? 10 : 14,
-        paddingHorizontal: compact ? t.spacing.md : t.spacing.lg,
+        paddingVertical: compact ? 12 : 18,
+        paddingHorizontal: compact ? t.spacing.lg : t.spacing.xl,
         borderRadius: t.radius.lg,
         alignItems: "center",
         justifyContent: "center",
         alignSelf: full ? "stretch" : "flex-start",
         flexDirection: "row",
-        gap: t.spacing.sm,
+        gap: t.spacing.md,
         borderWidth: variant === "ghost" ? 1.5 : 0,
         borderColor: variant === "ghost" ? colors.fg : "transparent",
-        minHeight: compact ? 40 : 50,
+        minHeight: compact ? 44 : 56,
       })}
     >
       {loading ? <ActivityIndicator size="small" color={colors.fg} /> : null}
-      <Text style={{ ...t.typography.callout, fontSize: compact ? 13 : 16, fontWeight: "600", color: colors.fg }}>
+      <Text style={{ ...t.typography.callout, fontSize: compact ? 15 : 18, fontWeight: "700", color: colors.fg }}>
         {label}
       </Text>
     </Pressable>
