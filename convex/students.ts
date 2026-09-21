@@ -106,6 +106,7 @@ export const getStudent = query({
     }
 
     const batch = await ctx.db.get(student.batchId);
+    const course = batch ? await ctx.db.get(batch.courseId) : null;
 
     const attendance = await ctx.db
       .query("attendance")
@@ -135,6 +136,8 @@ export const getStudent = query({
       customValues: student.customValues,
       batchId: student.batchId,
       batchName: batch?.name ?? "—",
+      batchCourseName: course?.name ?? "—",
+      academyId: student.academyId,
       attendanceRate: live.length > 0 ? Math.round((present / live.length) * 100) : 0,
       outstanding: fees
         .filter((f) => f.deletedAt === undefined)
