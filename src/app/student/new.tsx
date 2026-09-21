@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -23,10 +23,16 @@ export default function NewStudent() {
   const t = useTheme();
   const { session } = useSession();
   const create = useMutation(api.students.createStudent);
+  const enrollCourse = useMutation(api.enrollments.enrollStudentInCourse);
 
   const batches = useQuery(
     api.batches.listBatches,
     session?.academyId ? { academyId: session.academyId, status: "active" } : "skip"
+  );
+
+  const courses = useQuery(
+    api.courses.listCourses,
+    session?.academyId ? { academyId: session.academyId } : "skip"
   );
 
   const [batchId, setBatchId] = useState<Id<"batches"> | null>(null);
@@ -36,6 +42,7 @@ export default function NewStudent() {
   const [parentPhone, setParentPhone] = useState("");
   const [studentPhone, setStudentPhone] = useState("");
   const [discount, setDiscount] = useState("");
+  const [selectedCourses, setSelectedCourses] = useState<Set<Id<"courses">>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -65,7 +72,7 @@ export default function NewStudent() {
     setError("");
 
     try {
-      await create({
+      const studentId = await create({
         academyId: session.academyId,
         batchId,
         name: name.trim(),
@@ -76,6 +83,12 @@ export default function NewStudent() {
         discount: discountAmount,
         admissionDate: todayKey(),
       });
+
+      // Enroll student in selected courses
+      for (const courseId of selectedCourses) {
+        await enrollCourse({ studentId, courseId: courseId as never });
+      }
+
       router.back();
     } catch (e) {
       setError(
@@ -86,7 +99,7 @@ export default function NewStudent() {
     }
   }
 
-  if (batches === undefined) return <Loader />;
+  if (batches === undefined || courses === undefined) return <Loader />;
 
   return (
     <KeyboardAvoidingView
@@ -112,8 +125,6 @@ export default function NewStudent() {
               value={batchId ?? ""}
               onChange={(v) => {
                 setBatchId(v as Id<"batches">);
-                const b = batches.find((x) => x.batchId === v);
-                if (b && !fee) setFee("");
               }}
               options={batches.map((b) => ({
                 label: `${b.name} (${b.seatsLeft} left)`,
@@ -157,6 +168,50 @@ export default function NewStudent() {
             )}
 
             <Field label="Discount" value={discount} onChangeText={setDiscount} placeholder="0" keyboardType="numeric" suffix="PKR" />
+
+            {courses.length > 0 && (
+              <View style={{ gap: t.spacing.sm }}>
+                <AppText variant="micro" color={t.colors.textMuted}>
+                  COURSES (OPTIONAL)
+                </AppText>
+                <View style={{ backgroundColor: t.colors.surface, borderRadius: t.radius.lg, overflow: "hidden" }}>
+                  {courses.map((course, idx) => {
+                    const selected = selectedCourses.has(course.courseId);
+                    return (
+                      <View key={course.courseId}>
+                        <Pressable
+                          onPress={() => {
+                            const newSet = new Set(selectedCourses);
+                            if (selected) {
+                              newSet.delete(course.courseId);
+                            } else {
+                              newSet.add(course.courseId);
+                            }
+                            setSelectedCourses(newSet);
+                          }}
+                          style={{
+                            paddingHorizontal: t.spacing.lg,
+                            paddingVertical: t.spacing.md,
+                            backgroundColor: selected ? t.colors.accentSoft : "transparent",
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <AppText variant="body" color={t.colors.text}>
+                            {course.name}
+                          </AppText>
+                          {selected && <AppText style={{ color: t.colors.accent, fontSize: 20 }}>✓</AppText>}
+                        </Pressable>
+                        {idx < courses.length - 1 && (
+                          <View style={{ height: 1, backgroundColor: t.colors.border, marginHorizontal: t.spacing.lg }} />
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
 
             <ErrorNote message={error} />
 
