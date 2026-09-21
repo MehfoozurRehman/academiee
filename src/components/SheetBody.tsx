@@ -36,7 +36,14 @@ export function SheetBody({
         />
       ) : null}
 
-      <AppText variant="title">{title}</AppText>
+      <View style={{ marginBottom: t.spacing.sm }}>
+        <AppText
+          variant="display"
+          style={{ fontSize: 34, fontWeight: "700", lineHeight: 41 }}
+        >
+          {title}
+        </AppText>
+      </View>
       {children}
     </View>
   );

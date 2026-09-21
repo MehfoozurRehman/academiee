@@ -29,11 +29,11 @@ export function FormSheet({
         <View style={{ gap: t.spacing.lg }}>
           {/* Choices Section */}
           {choices.length > 0 && (
-            <View style={{ gap: t.spacing.sm }}>
+            <View style={{ gap: t.spacing.md }}>
               {choices.map((choice) => (
                 <View key={choice.key} style={{ gap: t.spacing.sm }}>
-                  <AppText variant="micro" color={t.colors.textMuted} style={{ marginHorizontal: t.spacing.lg }}>
-                    {choice.label.toUpperCase()}
+                  <AppText variant="callout" color={t.colors.text} style={{ marginHorizontal: t.spacing.lg, fontWeight: "600" }}>
+                    {choice.label}
                   </AppText>
                   <View style={{ backgroundColor: t.colors.surface, borderRadius: t.radius.lg, overflow: "hidden" }}>
                     <Segmented
@@ -49,11 +49,11 @@ export function FormSheet({
 
           {/* Toggle Groups Section */}
           {toggleGroups.length > 0 && (
-            <View style={{ gap: t.spacing.sm }}>
+            <View style={{ gap: t.spacing.md }}>
               {toggleGroups.map((group) => (
                 <View key={group.key} style={{ gap: t.spacing.sm }}>
-                  <AppText variant="micro" color={t.colors.textMuted} style={{ marginHorizontal: t.spacing.lg }}>
-                    {group.label.toUpperCase()}
+                  <AppText variant="callout" color={t.colors.text} style={{ marginHorizontal: t.spacing.lg, fontWeight: "600" }}>
+                    {group.label}
                   </AppText>
                   <View style={{ backgroundColor: t.colors.surface, borderRadius: t.radius.lg, overflow: "hidden" }}>
                     {group.options.map((option, idx) => {
@@ -127,7 +127,7 @@ export function FormSheet({
           ) : null}
 
           {/* Submit Button */}
-          <View style={{ marginHorizontal: t.spacing.lg }}>
+          <View style={{ marginHorizontal: t.spacing.lg, marginTop: t.spacing.md }}>
             <Button label={submitLabel} onPress={onSubmit} loading={busy} />
           </View>
         </View>
