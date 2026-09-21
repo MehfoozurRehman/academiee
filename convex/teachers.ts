@@ -64,6 +64,33 @@ export const listTeachers = query({
   },
 });
 
+export const getTeacher = query({
+  args: { teacherId: v.id("teachers") },
+  async handler(ctx, args) {
+    const teacher = await ctx.db.get(args.teacherId);
+    if (!teacher || teacher.deletedAt !== undefined) {
+      return null;
+    }
+
+    const batches = await ctx.db
+      .query("batches")
+      .withIndex("by_teacherId", (q) => q.eq("teacherId", teacher._id))
+      .collect();
+
+    return {
+      teacherId: teacher._id,
+      name: teacher.name,
+      email: teacher.email,
+      phone: teacher.phone,
+      subject: teacher.subject,
+      monthlySalary: teacher.monthlySalary,
+      status: teacher.status,
+      hireDate: teacher.hireDate,
+      batchCount: batches.filter((b) => b.deletedAt === undefined).length,
+    };
+  },
+});
+
 export const updateTeacher = mutation({
   args: {
     teacherId: v.id("teachers"),

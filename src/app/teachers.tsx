@@ -15,8 +15,6 @@ export default function Teachers() {
   const t = useTheme();
   const { session } = useSession();
   const create = useMutation(api.teachers.createTeacher);
-  const update = useMutation(api.teachers.updateTeacher);
-  const remove = useMutation(api.teachers.deleteTeacher);
 
   const teachers = useQuery(
     api.teachers.listTeachers,
@@ -24,7 +22,6 @@ export default function Teachers() {
   );
 
   const [open, setOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [values, setValues] = useState<Record<string, string>>(EMPTY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -34,20 +31,7 @@ export default function Teachers() {
   }
 
   function openAdd() {
-    setEditingId(null);
     setValues(EMPTY);
-    setError("");
-    setOpen(true);
-  }
-
-  function openEdit(teacher: any) {
-    setEditingId(teacher.teacherId);
-    setValues({
-      name: teacher.name,
-      subject: teacher.subject,
-      phone: teacher.phone,
-      salary: teacher.monthlySalary.toString(),
-    });
     setError("");
     setOpen(true);
   }
@@ -68,49 +52,21 @@ export default function Teachers() {
     setBusy(true);
     setError("");
     try {
-      if (editingId) {
-        await update({
-          teacherId: editingId as never,
-          name: values.name.trim(),
-          phone: values.phone.trim(),
-          subject: values.subject.trim(),
-          monthlySalary,
-        });
-      } else {
-        await create({
-          academyId: session.academyId,
-          name: values.name.trim(),
-          phone: values.phone.trim(),
-          subject: values.subject.trim(),
-          monthlySalary,
-          hireDate: todayKey(),
-        });
-      }
+      await create({
+        academyId: session.academyId,
+        name: values.name.trim(),
+        phone: values.phone.trim(),
+        subject: values.subject.trim(),
+        monthlySalary,
+        hireDate: todayKey(),
+      });
       setOpen(false);
-      setEditingId(null);
       setValues(EMPTY);
     } catch (e) {
-      setError(cleanError(e, editingId ? "Could not update teacher" : "Could not add teacher"));
+      setError(cleanError(e, "Could not add teacher"));
     } finally {
       setBusy(false);
     }
-  }
-
-  function confirmDelete(teacherId: string, teacherName: string) {
-    Alert.alert("Delete teacher?", `${teacherName} will move to the recycle bin.`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await remove({ teacherId: teacherId as never });
-          } catch (e) {
-            Alert.alert("Could not delete", cleanError(e, "Unknown error"));
-          }
-        },
-      },
-    ]);
   }
 
   return (
@@ -137,41 +93,31 @@ export default function Teachers() {
           contentContainerStyle={{ padding: t.spacing.lg, paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <Card style={{ marginBottom: t.spacing.sm }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: t.spacing.md }}>
-                <Avatar name={item.name} />
+            <Pressable onPress={() => router.push(`/teacher/${item.teacherId}`)}>
+              <Card style={{ marginBottom: t.spacing.sm }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: t.spacing.md }}>
+                  <Avatar name={item.name} />
 
-                <View style={{ flex: 1, gap: 2 }}>
-                  <AppText variant="body" numberOfLines={1} style={{ fontWeight: "600" } as never}>
-                    {item.name}
-                  </AppText>
-                  <AppText variant="caption" color={t.colors.textMuted} numberOfLines={1}>
-                    {item.subject} · {item.batchCount} batch{item.batchCount === 1 ? "" : "es"}
-                  </AppText>
-                  <AppText variant="caption" color={t.colors.textFaint} numberOfLines={1}>
-                    {item.phone}
-                  </AppText>
-                </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <AppText variant="body" numberOfLines={1} style={{ fontWeight: "600" } as never}>
+                      {item.name}
+                    </AppText>
+                    <AppText variant="caption" color={t.colors.textMuted} numberOfLines={1}>
+                      {item.subject} · {item.batchCount} batch{item.batchCount === 1 ? "" : "es"}
+                    </AppText>
+                    <AppText variant="caption" color={t.colors.textFaint} numberOfLines={1}>
+                      {item.phone}
+                    </AppText>
+                  </View>
 
-                <View style={{ alignItems: "flex-end", gap: 6 }}>
-                  <AppText variant="callout" style={{ fontWeight: "600" } as never}>
-                    {formatMoney(item.monthlySalary)}
-                  </AppText>
-                  <View style={{ flexDirection: "row", gap: 12 }}>
-                    <Pressable onPress={() => openEdit(item)} hitSlop={8}>
-                      <AppText variant="caption" color={t.colors.primary}>
-                        Edit
-                      </AppText>
-                    </Pressable>
-                    <Pressable onPress={() => confirmDelete(item.teacherId, item.name)} hitSlop={8}>
-                      <AppText variant="caption" color={t.colors.danger}>
-                        Delete
-                      </AppText>
-                    </Pressable>
+                  <View style={{ alignItems: "flex-end", gap: 6 }}>
+                    <AppText variant="callout" style={{ fontWeight: "600" } as never}>
+                      {formatMoney(item.monthlySalary)}
+                    </AppText>
                   </View>
                 </View>
-              </View>
-            </Card>
+              </Card>
+            </Pressable>
           )}
         />
       )}
@@ -181,10 +127,10 @@ export default function Teachers() {
       <FormSheet
         open={open}
         onClose={() => setOpen(false)}
-        title={editingId ? "Edit teacher" : "Add teacher"}
+        title="Add teacher"
         values={values}
         onChange={setValue}
-        submitLabel={editingId ? "Save changes" : "Add teacher"}
+        submitLabel="Add teacher"
         onSubmit={submit}
         busy={busy}
         error={error}
