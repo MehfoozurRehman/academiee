@@ -7,6 +7,14 @@
     "icon": "./assets/images/icon.png",
     "scheme": "academiee",
     "userInterfaceStyle": "automatic",
+    "updates": {
+      "url": "https://u.expo.dev/4f29464a-c6fd-43ef-895d-ae742074eca0",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.academiee.app",
