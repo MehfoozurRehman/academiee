@@ -1,7 +1,7 @@
 {
   "name": "academiee",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "packageManager": "pnpm@11.24.0",
   "dependencies": {
     "@expo/ui": "~57.0.19",
