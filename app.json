@@ -41,6 +41,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4f29464a-c6fd-43ef-895d-ae742074eca0"
+      }
+    },
+    "owner": "devscot.com"
   }
 }
