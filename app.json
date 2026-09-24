@@ -1,25 +1,38 @@
 {
   "expo": {
-    "name": "academiee",
+    "name": "Academiee",
     "slug": "academiee",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "academiee",
     "userInterfaceStyle": "automatic",
+    "updates": {
+      "url": "https://u.expo.dev/4f29464a-c6fd-43ef-895d-ae742074eca0",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
-      "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.anonymous.academiee"
+      "icon": "./assets/images/icon.png",
+      "bundleIdentifier": "com.academiee.app",
+      "buildNumber": "2",
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#5B4BE8",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.academiee"
+      "package": "com.academiee.app"
     },
     "web": {
       "output": "static",
@@ -30,9 +43,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#5B4BE8",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 160
         }
       ],
       "expo-secure-store"
@@ -40,6 +53,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4f29464a-c6fd-43ef-895d-ae742074eca0"
+      }
+    },
+    "owner": "devscot.com"
   }
 }
