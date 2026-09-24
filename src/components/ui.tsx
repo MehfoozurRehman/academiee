@@ -1,7 +1,6 @@
-import { ReactNode, useRef } from "react";
+import { ReactNode } from "react";
 import {
   ActivityIndicator,
-  Animated,
   Platform,
   Pressable,
   ScrollView,
@@ -81,26 +80,19 @@ export function AppBar({
   return (
     <View
       style={{
-        paddingTop: insets.top + (large ? 4 : t.spacing.md),
+        paddingTop: insets.top + (large ? 2 : t.spacing.xs),
         paddingHorizontal: t.spacing.lg,
-        paddingBottom: large ? t.spacing.lg : t.spacing.md,
+        paddingBottom: large ? t.spacing.sm : t.spacing.sm + 2,
         backgroundColor: t.colors.bg,
-        borderBottomWidth: large ? 0 : 0.5,
+        borderBottomWidth: large ? 0 : Platform.OS === "ios" ? 0.5 : 0,
         borderBottomColor: t.colors.border,
       }}
     >
       {showControls || !large ? (
         <View style={{ flexDirection: "row", alignItems: "center", gap: t.spacing.sm, minHeight: 34 }}>
           {onBack ? (
-            <Pressable
-              onPress={onBack}
-              hitSlop={12}
-              style={({ pressed }) => ({
-                paddingRight: t.spacing.xs,
-                opacity: pressed && t.isIOS ? 0.6 : 1,
-              })}
-            >
-              <Text style={{ color: t.colors.accent, fontSize: 28, lineHeight: 30, fontWeight: "600" }}>
+            <Pressable onPress={onBack} hitSlop={12} style={{ paddingRight: t.spacing.xs }}>
+              <Text style={{ color: t.colors.accent, fontSize: 28, lineHeight: 30 }}>
                 {t.isIOS ? "‹" : "←"}
               </Text>
             </Pressable>
@@ -109,11 +101,11 @@ export function AppBar({
           <View style={{ flex: 1 }}>
             {!large ? (
               <>
-                <Text numberOfLines={1} style={{ ...t.typography.heading, color: t.colors.text, fontWeight: "700" }}>
+                <Text numberOfLines={1} style={{ ...t.typography.heading, color: t.colors.text }}>
                   {title}
                 </Text>
                 {subtitle ? (
-                  <Text numberOfLines={1} style={{ ...t.typography.caption, color: t.colors.textMuted, marginTop: 2 }}>
+                  <Text numberOfLines={1} style={{ ...t.typography.caption, color: t.colors.textMuted }}>
                     {subtitle}
                   </Text>
                 ) : null}
@@ -126,10 +118,10 @@ export function AppBar({
       ) : null}
 
       {large ? (
-        <View style={{ marginTop: showControls ? t.spacing.md : 0, gap: 4 }}>
-          <Text style={{ fontSize: 34, lineHeight: 41, color: t.colors.text, fontWeight: "700" }}>{title}</Text>
+        <View style={{ marginTop: showControls ? t.spacing.xs : 0 }}>
+          <Text style={{ ...t.typography.display, color: t.colors.text }}>{title}</Text>
           {subtitle ? (
-            <Text style={{ ...t.typography.callout, color: t.colors.textMuted, fontWeight: "500" }}>
+            <Text style={{ ...t.typography.callout, color: t.colors.textMuted, marginTop: 1 }}>
               {subtitle}
             </Text>
           ) : null}
@@ -159,14 +151,10 @@ export function Card({
           backgroundColor: t.colors.surface,
           borderRadius: t.radius.lg,
           padding: padded ? t.spacing.lg : 0,
-          borderWidth: 1,
+          borderWidth: t.isIOS ? 0 : 1,
           borderColor: t.colors.border,
           overflow: "hidden",
-          shadowColor: t.dark ? "#000000" : "transparent",
-          shadowOpacity: t.dark ? 0.3 : 0,
-          shadowRadius: t.dark ? 8 : 0,
-          shadowOffset: { width: 0, height: t.dark ? 2 : 0 },
-          elevation: t.dark ? 2 : 0,
+          ...t.elevation.card,
         },
         style,
       ]}
@@ -180,9 +168,9 @@ export function Card({
   return (
     <Pressable
       onPress={onPress}
-      android_ripple={{ color: t.colors.accentSoft, radius: 999 }}
+      android_ripple={{ color: t.colors.accentSoft }}
       style={({ pressed }) => ({
-        opacity: pressed && t.isIOS ? 0.85 : 1,
+        opacity: pressed && t.isIOS ? 0.7 : 1,
         borderRadius: t.radius.lg,
       })}
     >
@@ -226,7 +214,7 @@ export function Button({
 }: {
   label: string;
   onPress: () => void;
-  variant?: "filled" | "tonal" | "ghost" | "danger" | "secondary";
+  variant?: "filled" | "tonal" | "ghost" | "danger";
   loading?: boolean;
   disabled?: boolean;
   full?: boolean;
@@ -235,37 +223,40 @@ export function Button({
   const t = useTheme();
   const off = disabled || loading;
 
-  const colors = {
-    filled: { bg: t.colors.accent, fg: t.colors.onAccent },
-    tonal: { bg: t.colors.accentSoft, fg: t.colors.accent },
-    secondary: { bg: t.colors.secondarySoft, fg: t.colors.secondary },
-    ghost: { bg: "transparent", fg: t.colors.accent },
-    danger: { bg: t.colors.danger, fg: t.colors.onAccent },
+  const bg = {
+    filled: t.colors.accent,
+    tonal: t.colors.accentSoft,
+    ghost: "transparent",
+    danger: t.colors.danger,
+  }[variant];
+
+  const fg = {
+    filled: t.colors.onAccent,
+    tonal: t.colors.accent,
+    ghost: t.colors.accent,
+    danger: "#FFFFFF",
   }[variant];
 
   return (
     <Pressable
       onPress={onPress}
       disabled={off}
-      android_ripple={{ color: t.colors.accentSoft, radius: 999 }}
+      android_ripple={variant === "ghost" ? { color: t.colors.accentSoft } : { color: "#FFFFFF30" }}
       style={({ pressed }) => ({
-        backgroundColor: off ? (variant === "ghost" ? "transparent" : colors.bg) : colors.bg,
-        opacity: off ? 0.5 : pressed && t.isIOS ? 0.7 : 1,
-        paddingVertical: compact ? 14 : 20,
-        paddingHorizontal: compact ? t.spacing.xl : t.spacing.xxl,
-        borderRadius: t.radius.lg,
+        backgroundColor: bg,
+        opacity: off ? 0.45 : pressed && t.isIOS ? 0.75 : 1,
+        paddingVertical: compact ? 7 : 11,
+        paddingHorizontal: compact ? t.spacing.md : t.spacing.lg,
+        borderRadius: t.isIOS ? t.radius.md : t.radius.pill,
         alignItems: "center",
         justifyContent: "center",
         alignSelf: full ? "stretch" : "flex-start",
         flexDirection: "row",
-        gap: t.spacing.md,
-        borderWidth: variant === "ghost" ? 2 : 0,
-        borderColor: variant === "ghost" ? colors.fg : "transparent",
-        minHeight: compact ? 48 : 60,
+        gap: t.spacing.sm,
       })}
     >
-      {loading ? <ActivityIndicator size="small" color={colors.fg} /> : null}
-      <Text style={{ ...t.typography.callout, fontSize: compact ? 16 : 19, fontWeight: "800", color: colors.fg }}>
+      {loading ? <ActivityIndicator size="small" color={fg} /> : null}
+      <Text style={{ ...t.typography.callout, fontSize: compact ? 13 : 15, fontWeight: "600", color: fg }}>
         {label}
       </Text>
     </Pressable>
@@ -296,47 +287,46 @@ export function Field({
   const t = useTheme();
 
   return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: multiline ? "flex-start" : "center",
-        paddingHorizontal: t.spacing.lg,
-        paddingVertical: 11,
-        gap: t.spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: t.colors.border,
-      }}
-    >
+    <View style={{ gap: 6 }}>
       {label ? (
-        <Text style={{ fontSize: 16, color: t.colors.text }}>
+        <Text style={{ ...t.typography.micro, color: t.colors.textMuted, textTransform: "uppercase" }}>
           {label}
         </Text>
       ) : null}
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder ?? label}
-        placeholderTextColor={t.colors.textFaint}
-        secureTextEntry={secure}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        autoCorrect={false}
-        multiline={multiline}
+      <View
         style={{
-          flex: 1,
-          color: t.colors.text,
-          fontSize: 16,
-          paddingVertical: multiline ? 8 : 0,
-          minHeight: multiline ? 76 : undefined,
-          textAlign: "right",
-          textAlignVertical: multiline ? "top" : "center",
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: t.colors.surface,
+          borderRadius: t.radius.md,
+          borderWidth: 1,
+          borderColor: t.colors.border,
+          paddingHorizontal: t.spacing.md,
         }}
-      />
-      {suffix ? (
-        <Text style={{ fontSize: 14, color: t.colors.textMuted, marginLeft: t.spacing.sm }}>
-          {suffix}
-        </Text>
-      ) : null}
+      >
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={t.colors.textFaint}
+          secureTextEntry={secure}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={false}
+          multiline={multiline}
+          style={{
+            flex: 1,
+            color: t.colors.text,
+            fontSize: 15,
+            paddingVertical: multiline ? 10 : 11,
+            minHeight: multiline ? 76 : undefined,
+            textAlignVertical: multiline ? "top" : "center",
+          }}
+        />
+        {suffix ? (
+          <Text style={{ ...t.typography.caption, color: t.colors.textMuted }}>{suffix}</Text>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -361,15 +351,13 @@ export function Badge({ label, tone = "neutral" }: { label: string; tone?: Tone 
     <View
       style={{
         backgroundColor: c.bg,
-        paddingHorizontal: t.spacing.sm + 4,
-        paddingVertical: 5,
+        paddingHorizontal: t.spacing.sm + 2,
+        paddingVertical: 4,
         borderRadius: t.radius.pill,
         alignSelf: "flex-start",
-        borderWidth: 0.5,
-        borderColor: c.fg,
       }}
     >
-      <Text style={{ ...t.typography.micro, color: c.fg, fontWeight: "700", fontSize: 11 }}>{label.toUpperCase()}</Text>
+      <Text style={{ ...t.typography.micro, color: c.fg }}>{label.toUpperCase()}</Text>
     </View>
   );
 }
@@ -403,33 +391,33 @@ export function Row({
     <Pressable
       onPress={onPress}
       disabled={!onPress}
-      android_ripple={onPress ? { color: t.colors.accentSoft, radius: 999 } : undefined}
+      android_ripple={onPress ? { color: t.colors.accentSoft } : undefined}
       style={({ pressed }) => ({
-        opacity: pressed && t.isIOS && onPress ? 0.7 : 1,
+        opacity: pressed && t.isIOS && onPress ? 0.6 : 1,
         flexDirection: "row",
         alignItems: "center",
         gap: t.spacing.md,
-        paddingVertical: t.spacing.lg,
+        paddingVertical: t.spacing.md,
         paddingHorizontal: t.spacing.lg,
         borderBottomWidth: last ? 0 : 1,
         borderBottomColor: t.colors.border,
       })}
     >
       {leading}
-      <View style={{ flex: 1, gap: 3 }}>
-        <Text numberOfLines={1} style={{ ...t.typography.body, fontWeight: "600", color: t.colors.text, fontSize: 16 }}>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text numberOfLines={1} style={{ ...t.typography.body, fontWeight: "600", color: t.colors.text }}>
           {title}
         </Text>
         {subtitle ? (
-          <Text numberOfLines={1} style={{ ...t.typography.caption, color: t.colors.textMuted, fontSize: 13 }}>
+          <Text numberOfLines={1} style={{ ...t.typography.caption, color: t.colors.textMuted }}>
             {subtitle}
           </Text>
         ) : null}
       </View>
 
-      <View style={{ alignItems: "flex-end", gap: 6 }}>
+      <View style={{ alignItems: "flex-end", gap: 4 }}>
         {meta ? (
-          <Text style={{ ...t.typography.callout, fontWeight: "600", color: metaTone ?? t.colors.text, fontSize: 15 }}>
+          <Text style={{ ...t.typography.callout, fontWeight: "600", color: metaTone ?? t.colors.text }}>
             {meta}
           </Text>
         ) : null}
@@ -437,13 +425,13 @@ export function Row({
       </View>
 
       {onDelete ? (
-        <Pressable onPress={onDelete} hitSlop={10} style={({ pressed }) => ({ opacity: pressed && t.isIOS ? 0.6 : 1 })}>
-          <Text style={{ ...t.typography.caption, color: t.colors.danger, fontWeight: "600" }}>Delete</Text>
+        <Pressable onPress={onDelete} hitSlop={10}>
+          <Text style={{ ...t.typography.caption, color: t.colors.danger }}>Delete</Text>
         </Pressable>
       ) : null}
 
       {onPress && t.isIOS ? (
-        <Text style={{ color: t.colors.textFaint, fontSize: 18, marginLeft: 4 }}>›</Text>
+        <Text style={{ color: t.colors.textFaint, fontSize: 20 }}>›</Text>
       ) : null}
     </Pressable>
   );
@@ -458,32 +446,18 @@ export function Avatar({ name, tone }: { name: string; tone?: string }) {
     .join("")
     .toUpperCase();
 
-  const colors = [
-    { bg: "#FF4444", fg: "#FFFFFF" },
-    { bg: "#4DBE94", fg: "#FFFFFF" },
-    { bg: "#1E90FF", fg: "#FFFFFF" },
-    { bg: "#34C759", fg: "#FFFFFF" },
-    { bg: "#FFB800", fg: "#FFFFFF" },
-    { bg: "#FF9500", fg: "#FFFFFF" },
-    { bg: "#A855F7", fg: "#FFFFFF" },
-    { bg: "#06B6D4", fg: "#FFFFFF" },
-  ];
-
-  const colorIdx = name.charCodeAt(0) % colors.length;
-  const color = colors[colorIdx];
-
   return (
     <View
       style={{
         width: 40,
         height: 40,
-        borderRadius: 20,
-        backgroundColor: tone ?? color.bg,
+        borderRadius: t.isIOS ? 20 : 12,
+        backgroundColor: tone ?? t.colors.accentSoft,
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <Text style={{ ...t.typography.callout, fontWeight: "600", color: color.fg, fontSize: 14 }}>
+      <Text style={{ ...t.typography.callout, fontWeight: "700", color: t.colors.accent }}>
         {initials}
       </Text>
     </View>
@@ -504,35 +478,20 @@ export function EmptyState({
   const t = useTheme();
 
   return (
-    <View style={{ alignItems: "center", paddingVertical: t.spacing.xxl + 8, gap: t.spacing.md, paddingHorizontal: t.spacing.lg }}>
-      <View
-        style={{
-          width: 80,
-          height: 80,
-          borderRadius: 40,
-          backgroundColor: t.colors.accentSoft,
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: t.spacing.md,
-        }}
-      >
-        <Text style={{ fontSize: 40 }}>📭</Text>
-      </View>
-      <Text style={{ ...t.typography.heading, color: t.colors.text, fontSize: 18, fontWeight: "700" }}>{title}</Text>
+    <View style={{ alignItems: "center", paddingVertical: t.spacing.xxl, gap: t.spacing.sm }}>
+      <Text style={{ ...t.typography.heading, color: t.colors.text }}>{title}</Text>
       <Text
         style={{
           ...t.typography.caption,
           color: t.colors.textMuted,
           textAlign: "center",
-          maxWidth: 300,
-          fontSize: 14,
-          lineHeight: 20,
+          maxWidth: 280,
         }}
       >
         {message}
       </Text>
       {actionLabel && onAction ? (
-        <View style={{ marginTop: t.spacing.lg }}>
+        <View style={{ marginTop: t.spacing.sm }}>
           <Button label={actionLabel} onPress={onAction} full={false} compact />
         </View>
       ) : null}
@@ -596,26 +555,22 @@ export function Fab({ onPress, label = "+" }: { onPress: () => void; label?: str
   return (
     <Pressable
       onPress={onPress}
-      android_ripple={{ color: "#FFFFFF40", borderless: true, radius: 32 }}
+      android_ripple={{ color: "#FFFFFF40", borderless: false }}
       style={({ pressed }) => ({
         position: "absolute",
         right: t.spacing.lg,
         bottom: insets.bottom + t.spacing.lg,
         backgroundColor: t.colors.accent,
-        width: 56,
+        width: t.isIOS ? 56 : 64,
         height: 56,
-        borderRadius: 28,
+        borderRadius: t.isIOS ? 28 : 18,
         alignItems: "center",
         justifyContent: "center",
         opacity: pressed && t.isIOS ? 0.8 : 1,
-        shadowColor: t.colors.accent,
-        shadowOpacity: t.dark ? 0.4 : 0.2,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 4,
+        ...t.elevation.raised,
       })}
     >
-      <Text style={{ color: t.colors.onAccent, fontSize: 28, lineHeight: 32, fontWeight: "600" }}>
+      <Text style={{ color: t.colors.onAccent, fontSize: 28, lineHeight: 32, fontWeight: "400" }}>
         {label}
       </Text>
     </Pressable>

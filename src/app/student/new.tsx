@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
+import { KeyboardAvoidingView, Platform, View } from "react-native";
 import { router } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -23,16 +23,10 @@ export default function NewStudent() {
   const t = useTheme();
   const { session } = useSession();
   const create = useMutation(api.students.createStudent);
-  const enrollCourse = useMutation(api.enrollments.enrollStudentInCourse);
 
   const batches = useQuery(
     api.batches.listBatches,
     session?.academyId ? { academyId: session.academyId, status: "active" } : "skip"
-  );
-
-  const courses = useQuery(
-    api.courses.listCourses,
-    session?.academyId ? { academyId: session.academyId } : "skip"
   );
 
   const [batchId, setBatchId] = useState<Id<"batches"> | null>(null);
@@ -41,12 +35,9 @@ export default function NewStudent() {
   const [gender, setGender] = useState<"male" | "female">("male");
   const [parentPhone, setParentPhone] = useState("");
   const [studentPhone, setStudentPhone] = useState("");
-  const [discount, setDiscount] = useState("");
-  const [selectedCourses, setSelectedCourses] = useState<Set<Id<"courses">>>(new Set());
+  const [fee, setFee] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-
-  const currentBatch = batches?.find((b) => b.batchId === batchId);
 
   useEffect(() => {
     if (batches && batches.length > 0 && !batchId) {
@@ -57,25 +48,14 @@ export default function NewStudent() {
   async function submit() {
     if (!session?.academyId || !batchId) return;
 
-    const errors: string[] = [];
-
-    if (!name.trim()) errors.push("Student name is required");
-    if (!fatherName.trim()) errors.push("Father name is required");
-    if (!parentPhone.trim()) errors.push("Parent phone is required");
-    if (parentPhone.trim() && !/^03\d{9}$/.test(parentPhone.trim())) {
-      errors.push("Parent phone must be in format: 03001234567");
-    }
-    if (studentPhone.trim() && !/^03\d{9}$/.test(studentPhone.trim())) {
-      errors.push("Student phone must be in format: 03001234567");
+    if (!name.trim() || !fatherName.trim() || !parentPhone.trim()) {
+      setError("Name, father name and parent phone are required");
+      return;
     }
 
-    const discountAmount = Number(discount);
-    if (discount && (!Number.isFinite(discountAmount) || discountAmount < 0)) {
-      errors.push("Discount must be a valid positive number");
-    }
-
-    if (errors.length > 0) {
-      setError(errors.join("\n"));
+    const monthlyFee = Number(fee);
+    if (!Number.isFinite(monthlyFee) || monthlyFee <= 0) {
+      setError("Enter a valid monthly fee");
       return;
     }
 
@@ -83,7 +63,7 @@ export default function NewStudent() {
     setError("");
 
     try {
-      const result = await create({
+      await create({
         academyId: session.academyId,
         batchId,
         name: name.trim(),
@@ -91,34 +71,20 @@ export default function NewStudent() {
         gender,
         parentPhone: parentPhone.trim(),
         studentPhone: studentPhone.trim() || undefined,
-        discount: Number.isFinite(discountAmount) ? discountAmount : 0,
+        monthlyFee,
         admissionDate: todayKey(),
       });
-
-      // Enroll student in selected courses
-      const enrollmentErrors: string[] = [];
-      for (const courseId of selectedCourses) {
-        try {
-          await enrollCourse({ studentId: result.studentId, courseId: courseId as never });
-        } catch (enrollError) {
-          enrollmentErrors.push(cleanError(enrollError, `Failed to enroll in a course`));
-        }
-      }
-
-      if (enrollmentErrors.length > 0) {
-        setError(`Student added but ${enrollmentErrors.length} course enrollment(s) failed:\n${enrollmentErrors.join("\n")}`);
-        return;
-      }
-
       router.back();
     } catch (e) {
-      setError(cleanError(e, "Could not add student"));
+      setError(
+        cleanError(e, "Could not add student")
+      );
     } finally {
       setBusy(false);
     }
   }
 
-  if (batches === undefined || courses === undefined) return <Loader />;
+  if (batches === undefined) return <Loader />;
 
   return (
     <KeyboardAvoidingView
@@ -144,6 +110,8 @@ export default function NewStudent() {
               value={batchId ?? ""}
               onChange={(v) => {
                 setBatchId(v as Id<"batches">);
+                const b = batches.find((x) => x.batchId === v);
+                if (b && !fee) setFee("");
               }}
               options={batches.map((b) => ({
                 label: `${b.name} (${b.seatsLeft} left)`,
@@ -172,71 +140,7 @@ export default function NewStudent() {
 
             <Field label="Parent phone" value={parentPhone} onChangeText={setParentPhone} placeholder="03001112233" keyboardType="phone-pad" />
             <Field label="Student phone" value={studentPhone} onChangeText={setStudentPhone} placeholder="Optional" keyboardType="phone-pad" />
-
-            {currentBatch && (
-              <View style={{ gap: t.spacing.sm, paddingVertical: t.spacing.sm }}>
-                <AppText variant="micro" color={t.colors.textMuted}>
-                  MONTHLY FEE
-                </AppText>
-                <View style={{ paddingHorizontal: t.spacing.md, paddingVertical: t.spacing.sm }}>
-                  <AppText variant="body" color={t.colors.text}>
-                    PKR {currentBatch.monthlyFee?.toLocaleString() || "—"}
-                  </AppText>
-                </View>
-              </View>
-            )}
-
-            <Field label="Discount" value={discount} onChangeText={setDiscount} placeholder="0" keyboardType="numeric" suffix="PKR" />
-
-            <View style={{ gap: t.spacing.sm }}>
-              <AppText variant="micro" color={t.colors.textMuted}>
-                COURSES (OPTIONAL)
-              </AppText>
-              {courses.length === 0 ? (
-                <View style={{ paddingHorizontal: t.spacing.md, paddingVertical: t.spacing.sm }}>
-                  <AppText variant="body" color={t.colors.textMuted}>
-                    No courses available
-                  </AppText>
-                </View>
-              ) : (
-                <View style={{ backgroundColor: t.colors.surface, borderRadius: t.radius.lg, overflow: "hidden" }}>
-                  {courses.map((course, idx) => {
-                    const selected = selectedCourses.has(course.courseId);
-                    return (
-                      <View key={course.courseId}>
-                        <Pressable
-                          onPress={() => {
-                            const newSet = new Set(selectedCourses);
-                            if (selected) {
-                              newSet.delete(course.courseId);
-                            } else {
-                              newSet.add(course.courseId);
-                            }
-                            setSelectedCourses(newSet);
-                          }}
-                          style={{
-                            paddingHorizontal: t.spacing.lg,
-                            paddingVertical: t.spacing.md,
-                            backgroundColor: selected ? t.colors.accentSoft : "transparent",
-                            flexDirection: "row",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <AppText variant="body" color={t.colors.text}>
-                            {course.name}
-                          </AppText>
-                          {selected && <AppText style={{ color: t.colors.accent, fontSize: 20 }}>✓</AppText>}
-                        </Pressable>
-                        {idx < courses.length - 1 && (
-                          <View style={{ height: 1, backgroundColor: t.colors.border, marginHorizontal: t.spacing.lg }} />
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
-            </View>
+            <Field label="Monthly fee" value={fee} onChangeText={setFee} placeholder="8000" keyboardType="numeric" suffix="PKR" />
 
             <ErrorNote message={error} />
 
