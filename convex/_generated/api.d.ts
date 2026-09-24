@@ -14,7 +14,6 @@ import type * as auth from "../auth.js";
 import type * as batches from "../batches.js";
 import type * as courses from "../courses.js";
 import type * as customFields from "../customFields.js";
-import type * as enrollments from "../enrollments.js";
 import type * as expenses from "../expenses.js";
 import type * as fees from "../fees.js";
 import type * as health from "../health.js";
@@ -40,7 +39,6 @@ declare const fullApi: ApiFromModules<{
   batches: typeof batches;
   courses: typeof courses;
   customFields: typeof customFields;
-  enrollments: typeof enrollments;
   expenses: typeof expenses;
   fees: typeof fees;
   health: typeof health;

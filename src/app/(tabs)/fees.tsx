@@ -18,7 +18,6 @@ import {
   type Tone,
 } from "../../components/ui";
 import { PaymentSheet } from "../../components/PaymentSheet";
-import { ReversalSheet } from "../../components/ReversalSheet";
 import { cleanError } from "../../lib/errors";
 
 const TONE: Record<string, Tone> = {
@@ -48,11 +47,6 @@ export default function Fees() {
     feeId: Id<"fees">;
     studentName: string;
     balance: number;
-  } | null>(null);
-  const [reversal, setReversal] = useState<{
-    feeId: Id<"fees">;
-    studentName: string;
-    amountPaid: number;
   } | null>(null);
 
   const generate = useMutation(api.fees.generateMonthlyFees);
@@ -168,21 +162,16 @@ export default function Fees() {
                 meta={formatMoney(item.feeAmount)}
                 badge={item.status}
                 badgeTone={TONE[item.status]}
-                onPress={() => {
-                  if (item.balance > 0) {
-                    setActive({
-                      feeId: item.feeId,
-                      studentName: item.studentName,
-                      balance: item.balance,
-                    });
-                  } else {
-                    setReversal({
-                      feeId: item.feeId,
-                      studentName: item.studentName,
-                      amountPaid: item.amountPaid,
-                    });
-                  }
-                }}
+                onPress={
+                  item.balance > 0
+                    ? () =>
+                        setActive({
+                          feeId: item.feeId,
+                          studentName: item.studentName,
+                          balance: item.balance,
+                        })
+                    : undefined
+                }
               />
             </Card>
           )}
@@ -195,14 +184,6 @@ export default function Fees() {
         studentName={active?.studentName ?? ""}
         balance={active?.balance ?? 0}
         onClose={() => setActive(null)}
-      />
-
-      <ReversalSheet
-        open={reversal !== null}
-        feeId={reversal?.feeId ?? null}
-        studentName={reversal?.studentName ?? ""}
-        amountPaid={reversal?.amountPaid ?? 0}
-        onClose={() => setReversal(null)}
       />
     </View>
   );

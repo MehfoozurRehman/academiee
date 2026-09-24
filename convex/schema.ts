@@ -96,9 +96,9 @@ export default defineSchema({
     parentPhone: v.string(),
     email: v.optional(v.string()),
     address: v.optional(v.string()),
-    discount: v.number(),
+    monthlyFee: v.number(),
     admissionDate: v.string(),
-    status: v.union(v.literal("active"), v.literal("inactive"), v.literal("graduated"), v.literal("left")),
+    status: v.union(v.literal("active"), v.literal("inactive"), v.literal("graduated")),
     customValues: v.optional(v.record(v.string(), v.string())),
     deletedAt: v.optional(v.number()),
     createdAt: v.number(),
@@ -248,17 +248,6 @@ export default defineSchema({
   })
     .index("by_academyId", ["academyId"])
     .index("by_studentId", ["studentId"]),
-
-  enrollments: defineTable({
-    academyId: v.id("academies"),
-    studentId: v.id("students"),
-    courseId: v.id("courses"),
-    enrolledAt: v.number(),
-    completedAt: v.optional(v.number()),
-  })
-    .index("by_studentId", ["studentId"])
-    .index("by_courseId", ["courseId"])
-    .index("by_student_course", ["studentId", "courseId"]),
 
   activityLogs: defineTable({
     academyId: v.id("academies"),
