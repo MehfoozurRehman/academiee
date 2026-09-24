@@ -1,0 +1,33 @@
+{
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "env": {
+        "EXPO_PUBLIC_CONVEX_URL": "https://glad-fennec-89.convex.cloud"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_CONVEX_URL": "https://glad-fennec-89.convex.cloud"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_CONVEX_URL": "https://glad-fennec-89.convex.cloud"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
