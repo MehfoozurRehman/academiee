@@ -64,25 +64,15 @@ export const generateMonthlyFees = mutation({
     for (const student of active) {
       if (alreadyBilled.has(student._id)) continue;
 
-      const batch = await ctx.db.get(student.batchId);
-      if (!batch) continue;
-
-      const course = await ctx.db.get(batch.courseId);
-      if (!course) continue;
-
-      const feeAmount = course.monthlyFee;
-      const discount = student.discount;
-      const balance = feeAmount - discount;
-
       await ctx.db.insert("fees", {
         academyId: args.academyId,
         studentId: student._id,
         month: args.month,
-        feeAmount,
-        discount,
+        feeAmount: student.monthlyFee,
+        discount: 0,
         amountPaid: 0,
-        balance,
-        status: resolveStatus(balance, 0, args.dueDate),
+        balance: student.monthlyFee,
+        status: resolveStatus(student.monthlyFee, 0, args.dueDate),
         dueDate: args.dueDate,
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -130,43 +120,6 @@ export const recordPayment = mutation({
     });
 
     return { feeId: args.feeId, balance };
-  },
-});
-
-export const reversePayment = mutation({
-  args: {
-    feeId: v.id("fees"),
-    amount: v.number(),
-  },
-  async handler(ctx, args) {
-    if (args.amount <= 0) {
-      throw new Error("Reversal amount must be greater than zero");
-    }
-
-    const fee = await ctx.db.get(args.feeId);
-    if (!fee || fee.deletedAt !== undefined) {
-      throw new Error("Fee record not found");
-    }
-
-    if (args.amount > fee.amountPaid) {
-      throw new Error(
-        `Reversal amount exceeds the paid amount of ${fee.amountPaid}`
-      );
-    }
-
-    const amountPaid = fee.amountPaid - args.amount;
-    const balance = fee.balance + args.amount;
-
-    await ctx.db.patch(args.feeId, {
-      amountPaid,
-      balance,
-      status: resolveStatus(balance, amountPaid, fee.dueDate),
-      paymentMethod: undefined,
-      paymentDate: undefined,
-      updatedAt: Date.now(),
-    });
-
-    return { feeId: args.feeId, balance, reversalAmount: args.amount };
   },
 });
 

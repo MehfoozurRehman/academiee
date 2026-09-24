@@ -15,6 +15,7 @@ export default function Teachers() {
   const t = useTheme();
   const { session } = useSession();
   const create = useMutation(api.teachers.createTeacher);
+  const remove = useMutation(api.teachers.deleteTeacher);
 
   const teachers = useQuery(
     api.teachers.listTeachers,
@@ -28,12 +29,6 @@ export default function Teachers() {
 
   function setValue(key: string, value: string) {
     setValues((prev) => ({ ...prev, [key]: value }));
-  }
-
-  function openAdd() {
-    setValues(EMPTY);
-    setError("");
-    setOpen(true);
   }
 
   async function submit() {
@@ -69,6 +64,23 @@ export default function Teachers() {
     }
   }
 
+  function confirmDelete(teacherId: string, teacherName: string) {
+    Alert.alert("Delete teacher?", `${teacherName} will move to the recycle bin.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await remove({ teacherId: teacherId as never });
+          } catch (e) {
+            Alert.alert("Could not delete", cleanError(e, "Unknown error"));
+          }
+        },
+      },
+    ]);
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
       <AppBar
@@ -93,36 +105,39 @@ export default function Teachers() {
           contentContainerStyle={{ padding: t.spacing.lg, paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <Pressable onPress={() => router.push(`/teacher/${item.teacherId}`)}>
-              <Card style={{ marginBottom: t.spacing.sm }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: t.spacing.md }}>
-                  <Avatar name={item.name} />
+            <Card style={{ marginBottom: t.spacing.sm }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: t.spacing.md }}>
+                <Avatar name={item.name} />
 
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <AppText variant="body" numberOfLines={1} style={{ fontWeight: "600" } as never}>
-                      {item.name}
-                    </AppText>
-                    <AppText variant="caption" color={t.colors.textMuted} numberOfLines={1}>
-                      {item.subject} · {item.batchCount} batch{item.batchCount === 1 ? "" : "es"}
-                    </AppText>
-                    <AppText variant="caption" color={t.colors.textFaint} numberOfLines={1}>
-                      {item.phone}
-                    </AppText>
-                  </View>
-
-                  <View style={{ alignItems: "flex-end", gap: 6 }}>
-                    <AppText variant="callout" style={{ fontWeight: "600" } as never}>
-                      {formatMoney(item.monthlySalary)}
-                    </AppText>
-                  </View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <AppText variant="body" numberOfLines={1} style={{ fontWeight: "600" } as never}>
+                    {item.name}
+                  </AppText>
+                  <AppText variant="caption" color={t.colors.textMuted} numberOfLines={1}>
+                    {item.subject} · {item.batchCount} batch{item.batchCount === 1 ? "" : "es"}
+                  </AppText>
+                  <AppText variant="caption" color={t.colors.textFaint} numberOfLines={1}>
+                    {item.phone}
+                  </AppText>
                 </View>
-              </Card>
-            </Pressable>
+
+                <View style={{ alignItems: "flex-end", gap: 6 }}>
+                  <AppText variant="callout" style={{ fontWeight: "600" } as never}>
+                    {formatMoney(item.monthlySalary)}
+                  </AppText>
+                  <Pressable onPress={() => confirmDelete(item.teacherId, item.name)} hitSlop={8}>
+                    <AppText variant="caption" color={t.colors.danger}>
+                      Delete
+                    </AppText>
+                  </Pressable>
+                </View>
+              </View>
+            </Card>
           )}
         />
       )}
 
-      <Fab onPress={openAdd} />
+      <Fab onPress={() => setOpen(true)} />
 
       <FormSheet
         open={open}

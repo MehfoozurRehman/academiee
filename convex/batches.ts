@@ -63,7 +63,6 @@ export const listBatches = query({
               ? Math.round((b.currentStudents / b.capacity) * 100)
               : 0,
           status: b.status,
-          monthlyFee: course?.monthlyFee ?? 0,
         };
       })
     );

@@ -54,7 +54,6 @@ export default function Students() {
             { label: "Active", value: "active" },
             { label: "Inactive", value: "inactive" },
             { label: "Graduated", value: "graduated" },
-            { label: "Left", value: "left" },
             { label: "All", value: "all" },
           ]}
         />

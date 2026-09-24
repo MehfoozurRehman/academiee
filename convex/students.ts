@@ -12,7 +12,7 @@ export const createStudent = mutation({
     parentPhone: v.string(),
     email: v.optional(v.string()),
     address: v.optional(v.string()),
-    discount: v.number(),
+    monthlyFee: v.number(),
     admissionDate: v.string(),
     customValues: v.optional(v.record(v.string(), v.string())),
   },
@@ -82,14 +82,13 @@ export const listStudents = query({
           .filter((f) => f.deletedAt === undefined)
           .reduce((sum, f) => sum + f.balance, 0);
 
-        const course = await ctx.db.get(batch?.courseId!);
         return {
           studentId: s._id,
           name: s.name,
           fatherName: s.fatherName,
           parentPhone: s.parentPhone,
           batchName: batch?.name ?? "—",
-          monthlyFee: course?.monthlyFee ?? 0,
+          monthlyFee: s.monthlyFee,
           status: s.status,
           outstanding,
         };
@@ -107,7 +106,6 @@ export const getStudent = query({
     }
 
     const batch = await ctx.db.get(student.batchId);
-    const course = batch ? await ctx.db.get(batch.courseId) : null;
 
     const attendance = await ctx.db
       .query("attendance")
@@ -131,15 +129,12 @@ export const getStudent = query({
       parentPhone: student.parentPhone,
       email: student.email,
       address: student.address,
-      monthlyFee: course?.monthlyFee ?? 0,
-      discount: student.discount,
+      monthlyFee: student.monthlyFee,
       admissionDate: student.admissionDate,
       status: student.status,
       customValues: student.customValues,
       batchId: student.batchId,
       batchName: batch?.name ?? "—",
-      batchCourseName: course?.name ?? "—",
-      academyId: student.academyId,
       attendanceRate: live.length > 0 ? Math.round((present / live.length) * 100) : 0,
       outstanding: fees
         .filter((f) => f.deletedAt === undefined)
@@ -157,9 +152,9 @@ export const updateStudent = mutation({
     parentPhone: v.optional(v.string()),
     email: v.optional(v.string()),
     address: v.optional(v.string()),
-    discount: v.optional(v.number()),
+    monthlyFee: v.optional(v.number()),
     status: v.optional(
-      v.union(v.literal("active"), v.literal("inactive"), v.literal("graduated"), v.literal("left"))
+      v.union(v.literal("active"), v.literal("inactive"), v.literal("graduated"))
     ),
     customValues: v.optional(v.record(v.string(), v.string())),
   },
@@ -235,17 +230,6 @@ export const deleteStudent = mutation({
       await ctx.db.patch(batch._id, {
         currentStudents: Math.max(0, batch.currentStudents - 1),
       });
-    }
-
-    const fees = await ctx.db
-      .query("fees")
-      .withIndex("by_studentId", (q) => q.eq("studentId", args.studentId))
-      .collect();
-
-    for (const fee of fees) {
-      if (fee.deletedAt === undefined) {
-        await ctx.db.patch(fee._id, { deletedAt: Date.now() });
-      }
     }
 
     return { studentId: args.studentId };
