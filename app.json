@@ -20,6 +20,7 @@
       "bundleIdentifier": "com.academiee.app",
       "buildNumber": "2",
       "supportsTablet": true,
+      "requireFullScreen": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
