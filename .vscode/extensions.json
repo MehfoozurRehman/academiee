@@ -1,7 +1,1 @@
-{
-    "recommendations": [
-        "myml.vscode-markdown-plantuml-preview",
-        "esbenp.prettier-vscode",
-        "jebbs.plantuml"
-    ]
-}
+{ "recommendations": ["expo.vscode-expo-tools"] }
