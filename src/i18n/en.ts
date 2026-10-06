@@ -125,6 +125,7 @@ export const en = {
     recentPayments: "Recent payments",
   },
   home: {
+    monthsOverdue: "{count} months",
     net: "Net this month",
     todaysClasses: "Today's classes",
     noFollowUps: "Nobody is overdue. Nice.",

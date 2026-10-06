@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Platform, TextInput, View, type TextInputProps } from "react-native";
 import { useI18n } from "../../i18n/I18nProvider";
 import { useTheme } from "../../theme/ThemeProvider";
-import { fonts, radius, space } from "../../theme/tokens";
+import { fonts, radius, space, urduFamily } from "../../theme/tokens";
 import { Icon, type IconName } from "./Icon";
 import { Text } from "./Text";
 
@@ -65,7 +65,7 @@ export function Input({
               flex: 1,
               height: "100%",
               color: colors.text,
-              fontFamily: urdu ? fonts.urdu.regular : fonts.latin.medium,
+              fontFamily: urdu ? urduFamily("regular", Platform.OS === "web") : fonts.latin.medium,
               fontSize: 16,
               textAlign: latin ? "left" : Platform.OS === "web" && rtl ? "right" : "left",
               writingDirection: latin ? "ltr" : rtl ? "rtl" : "ltr",

@@ -93,6 +93,13 @@ export const fonts = {
 
 export type Weight = keyof typeof fonts.latin;
 
+/** Font stack for Urdu text. On the web the Urdu face only covers Urdu letters. */
+export function urduFamily(weight: Weight, web: boolean) {
+  if (!web) return fonts.urdu[weight];
+  const urdu = weight === "bold" || weight === "semibold" ? "UrduWeb700" : "UrduWeb400";
+  return `${urdu}, ${fonts.latin[weight]}`;
+}
+
 export const type = {
   display: { size: 34, weight: "bold", leading: 1.15, tracking: -0.8 },
   title: { size: 24, weight: "bold", leading: 1.2, tracking: -0.4 },

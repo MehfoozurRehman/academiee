@@ -38,7 +38,7 @@ function greetingKey() {
 
 function Stat({ label, value, icon }: { label: string; value: string; icon: IconName }) {
   return (
-    <Card style={{ flex: 1, minWidth: 140, gap: space.sm }}>
+    <Card style={{ flex: 1, minWidth: 100, gap: space.sm }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
         <Icon name={icon} size={16} color="textMuted" />
         <Text variant="caption" color="textMuted" numberOfLines={1}>
@@ -260,7 +260,7 @@ export default function Home() {
               <Reveal index={4}>
                 <Section
                   title={t("dashboard.needsFollowUp")}
-                  action={data.counts.overdue > 0 ? <Text variant="caption" color="danger" weight="semibold">{t("dashboard.overdueCount", { count: data.counts.overdue })}</Text> : undefined}
+                  action={data.overdueStudents > 0 ? <Text variant="caption" color="danger" weight="semibold">{t("dashboard.overdueCount", { count: data.overdueStudents })} · {money(data.overdueTotal)}</Text> : undefined}
                 >
                   {data.followUps.length === 0 ? (
                     <Card style={{ flexDirection: "row", gap: space.md, alignItems: "center" }}>
@@ -276,10 +276,9 @@ export default function Home() {
                           key={f.invoiceId}
                           leading={<Avatar name={f.studentName} size={36} />}
                           title={f.studentName}
-                          subtitle={`${f.studentCode} · ${money(f.balance)}`}
+                          subtitle={`${f.studentCode} · ${money(f.balance)}${f.months > 1 ? ` · ${t("home.monthsOverdue", { count: f.months })}` : ""}`}
                           onPress={() => router.push(`/students/${f.studentId}` as never)}
-                          chevron={false}
-                          trailing={
+                          action={
                             <Pressable
                               accessibilityRole="button"
                               accessibilityLabel={t("whatsapp.send")}
