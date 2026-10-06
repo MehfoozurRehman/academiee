@@ -62,8 +62,23 @@ Teachers & salaries, staff roles, parent login, push notifications, AI, custom d
 | 7 | Full web QA pass (every flow, both languages, both themes, phone width) | Bugs fixed and re-verified |
 | 8 | iOS & Android: native polish, push, EAS builds, preview OTA | Apps on the phone |
 
+## Status (2026-10-07)
+
+Phases 0–7 for **web** are built and tested in a browser (owner, student portal, super admin; English + Urdu; light + dark; phone + desktop widths). Live test build: https://academiee-rho.vercel.app (uses the Convex **dev** deployment and on-screen test codes — not for real data).
+
+Before going live for real:
+- Set up Resend (email codes) and a Convex **prod** deployment; build the web app against prod without `EXPO_PUBLIC_DEV_TOOLS`.
+- Phase 8 (iOS/Android) is next.
+
 ## Issues log
 
 Running list of problems found and fixed, newest first.
+
+- Vercel never uploads `node_modules` folders, so fonts/icons from Expo's web export 404'd — `scripts/fix-web-assets.mjs` flattens them (run by `pnpm build:web`).
+- Urdu: Latin names showed in Nastaliq's serif Latin glyphs; time ranges reversed inside RTL text — Urdu web font now limited to Arabic-script ranges; Latin runs forced LTR.
+- Dashboard follow-ups only looked at this month — now the last 12 months, grouped per student.
+- Nested buttons (WhatsApp button inside a tappable row) — `ListRow` has a separate `action` slot.
+- Detail queries threw on missing/foreign IDs — now return null so pages show "not found".
+- Sign-in redirect raced the session token — auth screens redirect once the session is live.
 
 - Design change (user request): removed delete/recycle bin for money and history records; replaced with void-with-reason, archive, and an audit log.

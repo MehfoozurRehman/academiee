@@ -80,7 +80,12 @@ export function AdminSidebar({ canGoBack }: { canGoBack: boolean }) {
             <View style={{ height: space.md }} />
             <NavLink item={{ href: "/home", label: "admin.backToAcademy", icon: "arrow-left" }} active={false} />
           </>
-        ) : null}
+        ) : (
+          <>
+            <View style={{ height: space.md }} />
+            <NavLink item={{ href: "/setup", label: "nav.addAcademy", icon: "plus" }} active={false} />
+          </>
+        )}
       </ScrollView>
       <Divider />
       <Pressable
@@ -131,7 +136,16 @@ export function AdminTopBar({ canGoBack }: { canGoBack: boolean }) {
             >
               <Icon name="home" size={17} color="textMuted" />
             </Pressable>
-          ) : null}
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("nav.addAcademy")}
+              onPress={() => router.navigate("/setup")}
+              style={{ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: colors.surfaceMuted }}
+            >
+              <Icon name="plus" size={17} color="textMuted" />
+            </Pressable>
+          )}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t("settings.signOut")}
