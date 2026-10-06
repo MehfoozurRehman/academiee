@@ -1,185 +1,127 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { attendanceStatus } from "./schema";
+import { audit, fail, ownedDoc, requireOwner } from "./lib/access";
+import { isRealDate, MONTH_RE, monthRange, weekdayOf } from "./lib/dates";
 
-export const markBatchAttendance = mutation({
-  args: {
-    academyId: v.id("academies"),
-    batchId: v.id("batches"),
-    date: v.string(),
-    entries: v.array(
-      v.object({
-        studentId: v.id("students"),
-        status: v.union(
-          v.literal("present"),
-          v.literal("absent"),
-          v.literal("late")
-        ),
-        remarks: v.optional(v.string()),
-      })
-    ),
-  },
-  async handler(ctx, args) {
-    const existing = await ctx.db
-      .query("attendance")
-      .withIndex("by_batch_date", (q) =>
-        q.eq("batchId", args.batchId).eq("date", args.date)
-      )
-      .collect();
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-    const byStudent = new Map(
-      existing.filter((a) => a.deletedAt === undefined).map((a) => [a.studentId, a])
-    );
+/** The roll for one batch on one day: active students and what's marked. */
+export const forBatchDay = query({
+  args: { academyId: v.id("academies"), batchId: v.id("batches"), date: v.string() },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.academyId);
+    const batch = await ownedDoc(ctx, "batches", args.batchId, args.academyId);
+    if (!isRealDate(args.date)) fail("INVALID", "Pick a valid date.");
 
-    let created = 0;
-    let updated = 0;
-
-    for (const entry of args.entries) {
-      const prior = byStudent.get(entry.studentId);
-
-      if (prior) {
-        await ctx.db.patch(prior._id, {
-          status: entry.status,
-          remarks: entry.remarks,
-          updatedAt: Date.now(),
-        });
-        updated++;
-      } else {
-        await ctx.db.insert("attendance", {
-          academyId: args.academyId,
-          batchId: args.batchId,
-          studentId: entry.studentId,
-          date: args.date,
-          status: entry.status,
-          remarks: entry.remarks,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-        created++;
-      }
-    }
-
-    return { created, updated };
-  },
-});
-
-export const getBatchAttendance = query({
-  args: {
-    batchId: v.id("batches"),
-    date: v.string(),
-  },
-  async handler(ctx, args) {
     const students = await ctx.db
       .query("students")
-      .withIndex("by_batchId", (q) => q.eq("batchId", args.batchId))
-      .collect();
-
-    const records = await ctx.db
+      .withIndex("by_batchId_and_status", (q) => q.eq("batchId", args.batchId).eq("status", "active"))
+      .take(500);
+    const marked = await ctx.db
       .query("attendance")
-      .withIndex("by_batch_date", (q) =>
-        q.eq("batchId", args.batchId).eq("date", args.date)
-      )
-      .collect();
-
-    const byStudent = new Map(
-      records.filter((a) => a.deletedAt === undefined).map((a) => [a.studentId, a])
-    );
-
-    return students
-      .filter((s) => s.deletedAt === undefined && s.status === "active")
-      .map((s) => {
-        const record = byStudent.get(s._id);
-        return {
-          studentId: s._id,
-          studentName: s.name,
-          status: record?.status ?? null,
-          remarks: record?.remarks,
-          attendanceId: record?._id ?? null,
-        };
-      });
-  },
-});
-
-export const listAttendance = query({
-  args: {
-    academyId: v.id("academies"),
-    fromDate: v.optional(v.string()),
-    toDate: v.optional(v.string()),
-    status: v.optional(v.string()),
-  },
-  async handler(ctx, args) {
-    const records = await ctx.db
-      .query("attendance")
-      .withIndex("by_academy_deleted", (q) =>
-        q.eq("academyId", args.academyId).eq("deletedAt", undefined)
-      )
-      .collect();
-
-    let rows = records;
-    if (args.fromDate) rows = rows.filter((a) => a.date >= args.fromDate!);
-    if (args.toDate) rows = rows.filter((a) => a.date <= args.toDate!);
-    if (args.status) rows = rows.filter((a) => a.status === args.status);
-
-    rows.sort((a, b) => b.date.localeCompare(a.date));
-
-    return Promise.all(
-      rows.map(async (a) => {
-        const student = await ctx.db.get(a.studentId);
-        const batch = await ctx.db.get(a.batchId);
-
-        return {
-          attendanceId: a._id,
-          date: a.date,
-          studentName: student?.name ?? "—",
-          batchName: batch?.name ?? "—",
-          status: a.status,
-          remarks: a.remarks,
-        };
-      })
-    );
-  },
-});
-
-export const getStudentAttendance = query({
-  args: { studentId: v.id("students") },
-  async handler(ctx, args) {
-    const records = await ctx.db
-      .query("attendance")
-      .withIndex("by_studentId", (q) => q.eq("studentId", args.studentId))
-      .collect();
-
-    const live = records.filter((a) => a.deletedAt === undefined);
-
-    const present = live.filter((a) => a.status === "present").length;
-    const absent = live.filter((a) => a.status === "absent").length;
-    const late = live.filter((a) => a.status === "late").length;
+      .withIndex("by_batchId_and_date", (q) => q.eq("batchId", args.batchId).eq("date", args.date))
+      .take(1000);
+    const byStudent = new Map(marked.map((a) => [a.studentId, a.status]));
 
     return {
-      total: live.length,
-      present,
-      absent,
-      late,
-      rate: live.length > 0 ? Math.round((present / live.length) * 100) : 0,
-      records: live
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .map((a) => ({
-          attendanceId: a._id,
-          date: a.date,
-          status: a.status,
-          remarks: a.remarks,
-        })),
+      isClassDay: batch.days.includes(weekdayOf(args.date)),
+      students: students
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((s) => ({ _id: s._id, name: s.name, code: s.code, status: byStudent.get(s._id) ?? null })),
     };
   },
 });
 
-export const deleteAttendance = mutation({
-  args: { attendanceId: v.id("attendance") },
-  async handler(ctx, args) {
-    const record = await ctx.db.get(args.attendanceId);
-    if (!record || record.deletedAt !== undefined) {
-      throw new Error("Attendance record not found");
+export const save = mutation({
+  args: {
+    academyId: v.id("academies"),
+    batchId: v.id("batches"),
+    date: v.string(),
+    entries: v.array(v.object({ studentId: v.id("students"), status: attendanceStatus })),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireOwner(ctx, args.academyId);
+    const batch = await ownedDoc(ctx, "batches", args.batchId, args.academyId);
+    if (!isRealDate(args.date)) fail("INVALID", "Pick a valid date.");
+    // Allow a little slack for timezones: at most 1 day ahead of UTC now.
+    const limit = new Date(Date.now() + DAY_MS).toISOString().slice(0, 10);
+    if (args.date > limit) fail("INVALID", "You can't mark attendance for a future date.");
+    if (args.entries.length === 0) fail("INVALID", "Mark at least one student.");
+    if (args.entries.length > 500) fail("INVALID", "Too many students at once.");
+
+    const seen = new Set<string>();
+    for (const e of args.entries) {
+      if (seen.has(e.studentId)) fail("INVALID", "A student appears twice in this list.");
+      seen.add(e.studentId);
+      const s = await ownedDoc(ctx, "students", e.studentId, args.academyId);
+      if (s.batchId !== args.batchId) fail("INVALID", `${s.name} isn't in this batch.`);
+      if (s.status !== "active") fail("INVALID", `${s.name} isn't an active student.`);
     }
 
-    await ctx.db.patch(args.attendanceId, { deletedAt: Date.now() });
-    return { attendanceId: args.attendanceId };
+    const existing = await ctx.db
+      .query("attendance")
+      .withIndex("by_batchId_and_date", (q) => q.eq("batchId", args.batchId).eq("date", args.date))
+      .take(1000);
+    const byStudent = new Map(existing.map((a) => [a.studentId, a]));
+
+    for (const e of args.entries) {
+      const row = byStudent.get(e.studentId);
+      if (row) {
+        if (row.status !== e.status) await ctx.db.patch("attendance", row._id, { status: e.status });
+      } else {
+        await ctx.db.insert("attendance", {
+          academyId: args.academyId,
+          batchId: args.batchId,
+          studentId: e.studentId,
+          date: args.date,
+          status: e.status,
+        });
+      }
+    }
+    await audit(ctx, args.academyId, userId, "attendance.saved", `${batch.name} ${args.date}: ${args.entries.length} students`);
+    return { saved: args.entries.length };
+  },
+});
+
+/** Per-batch attendance for a month. */
+export const summary = query({
+  args: { academyId: v.id("academies"), month: v.string() },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.academyId);
+    if (!MONTH_RE.test(args.month)) fail("INVALID", "Pick a month.");
+    const { from, to } = monthRange(args.month);
+
+    const batches = await ctx.db
+      .query("batches")
+      .withIndex("by_academyId_and_archivedAt", (q) => q.eq("academyId", args.academyId).eq("archivedAt", undefined))
+      .take(200);
+    const rows = await ctx.db
+      .query("attendance")
+      .withIndex("by_academyId_and_date", (q) => q.eq("academyId", args.academyId).gte("date", from).lte("date", to))
+      .take(5000);
+
+    const stats = new Map<string, { days: Set<string>; present: number; late: number; absent: number }>();
+    for (const r of rows) {
+      let s = stats.get(r.batchId);
+      if (!s) stats.set(r.batchId, (s = { days: new Set(), present: 0, late: 0, absent: 0 }));
+      s.days.add(r.date);
+      s[r.status]++;
+    }
+    return batches
+      .map((b) => {
+        const s = stats.get(b._id);
+        const total = s ? s.present + s.late + s.absent : 0;
+        return {
+          batchId: b._id,
+          batchName: b.name,
+          markedDays: s?.days.size ?? 0,
+          present: s?.present ?? 0,
+          late: s?.late ?? 0,
+          absent: s?.absent ?? 0,
+          rate: total ? Math.round((((s?.present ?? 0) + (s?.late ?? 0)) / total) * 100) : null,
+        };
+      })
+      .sort((a, b) => a.batchName.localeCompare(b.batchName));
   },
 });

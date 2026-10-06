@@ -1,155 +1,212 @@
 import { defineSchema, defineTable } from "convex/server";
+import { authTables } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
+// Money is stored as whole rupees. Dates are "YYYY-MM-DD", months "YYYY-MM",
+// times "HH:mm". Nothing financial is ever deleted: it is voided with a reason.
+
+export const role = v.union(v.literal("owner"), v.literal("student"));
+export const paymentMethod = v.union(
+  v.literal("cash"),
+  v.literal("bank"),
+  v.literal("jazzcash"),
+  v.literal("easypaisa")
+);
+export const attendanceStatus = v.union(
+  v.literal("present"),
+  v.literal("absent"),
+  v.literal("late")
+);
+export const studentStatus = v.union(
+  v.literal("active"),
+  v.literal("left"),
+  v.literal("graduated")
+);
+
 export default defineSchema({
-  users: defineTable({
-    email: v.string(),
-    password: v.string(),
-    name: v.string(),
-    phone: v.optional(v.string()),
-    status: v.union(v.literal("active"), v.literal("inactive")),
-    role: v.union(v.literal("admin"), v.literal("academy_owner")),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_email", ["email"])
-    .index("by_role", ["role"]),
+  ...authTables,
+
+  // Platform-wide settings: who is a super admin.
+  platformAdmins: defineTable({
+    userId: v.id("users"),
+  }).index("by_userId", ["userId"]),
 
   academies: defineTable({
-    ownerId: v.id("users"),
     name: v.string(),
-    phone: v.string(),
-    email: v.string(),
-    address: v.string(),
-    city: v.string(),
-    country: v.string(),
-    currency: v.string(),
-    whatsappNumber: v.string(),
-    logo: v.optional(v.string()),
-    status: v.union(v.literal("active"), v.literal("inactive"), v.literal("suspended")),
-    deletedAt: v.optional(v.number()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
+    /** Short public code students type to sign in, e.g. "BRIGHT". */
+    code: v.string(),
+    ownerId: v.id("users"),
+    city: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    address: v.optional(v.string()),
+    whatsapp: v.optional(v.string()),
+    /** Day of month fees fall due when generating invoices. */
+    feeDueDay: v.number(),
+    /** Running counters so IDs and receipt numbers are never reused. */
+    studentSeq: v.number(),
+    receiptSeq: v.number(),
+    suspendedAt: v.optional(v.number()),
   })
-    .index("by_ownerId", ["ownerId"])
-    .index("by_status", ["status"])
-    .index("by_deletedAt", ["deletedAt"]),
+    .index("by_code", ["code"])
+    .index("by_ownerId", ["ownerId"]),
+
+  memberships: defineTable({
+    userId: v.id("users"),
+    academyId: v.id("academies"),
+    role,
+    studentId: v.optional(v.id("students")),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_academyId_and_role", ["academyId", "role"])
+    .index("by_studentId", ["studentId"]),
+
+  /** Owner email sign-in codes (hashed). */
+  loginCodes: defineTable({
+    email: v.string(),
+    codeHash: v.string(),
+    expiresAt: v.number(),
+    attempts: v.number(),
+  }).index("by_email", ["email"]),
+
+  /** One-time sign-in codes an owner generates for a student (hashed). */
+  studentCodes: defineTable({
+    studentId: v.id("students"),
+    codeHash: v.string(),
+    expiresAt: v.number(),
+    attempts: v.number(),
+  }).index("by_studentId", ["studentId"]),
 
   courses: defineTable({
     academyId: v.id("academies"),
     name: v.string(),
-    description: v.optional(v.string()),
-    durationMonths: v.optional(v.number()),
     monthlyFee: v.number(),
-    status: v.union(v.literal("active"), v.literal("inactive")),
-    deletedAt: v.optional(v.number()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_academyId", ["academyId"])
-    .index("by_academy_deleted", ["academyId", "deletedAt"]),
-
-  teachers: defineTable({
-    academyId: v.id("academies"),
-    name: v.string(),
-    email: v.optional(v.string()),
-    phone: v.string(),
-    subject: v.string(),
-    address: v.optional(v.string()),
-    monthlySalary: v.number(),
-    hireDate: v.string(),
-    status: v.union(v.literal("active"), v.literal("inactive"), v.literal("on_leave")),
-    deletedAt: v.optional(v.number()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_academyId", ["academyId"])
-    .index("by_academy_deleted", ["academyId", "deletedAt"]),
+    archivedAt: v.optional(v.number()),
+  }).index("by_academyId_and_archivedAt", ["academyId", "archivedAt"]),
 
   batches: defineTable({
     academyId: v.id("academies"),
     courseId: v.id("courses"),
-    teacherId: v.id("teachers"),
     name: v.string(),
+    teacherName: v.string(),
+    /** 0 = Sunday … 6 = Saturday */
+    days: v.array(v.number()),
     startTime: v.string(),
     endTime: v.string(),
-    days: v.array(v.string()),
     capacity: v.number(),
-    currentStudents: v.number(),
-    status: v.union(v.literal("active"), v.literal("inactive"), v.literal("completed")),
-    deletedAt: v.optional(v.number()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
+    /** Active students in the batch; only changed through lib/enrolment.ts. */
+    enrolled: v.number(),
+    archivedAt: v.optional(v.number()),
   })
-    .index("by_academyId", ["academyId"])
-    .index("by_courseId", ["courseId"])
-    .index("by_teacherId", ["teacherId"])
-    .index("by_academy_deleted", ["academyId", "deletedAt"]),
+    .index("by_academyId_and_archivedAt", ["academyId", "archivedAt"])
+    .index("by_courseId_and_archivedAt", ["courseId", "archivedAt"]),
 
   students: defineTable({
     academyId: v.id("academies"),
     batchId: v.id("batches"),
+    /** Public student ID, e.g. "S-0012". */
+    code: v.string(),
     name: v.string(),
     fatherName: v.string(),
     gender: v.union(v.literal("male"), v.literal("female")),
-    studentPhone: v.optional(v.string()),
+    phone: v.optional(v.string()),
     parentPhone: v.string(),
-    email: v.optional(v.string()),
     address: v.optional(v.string()),
     monthlyFee: v.number(),
     admissionDate: v.string(),
-    status: v.union(v.literal("active"), v.literal("inactive"), v.literal("graduated")),
-    customValues: v.optional(v.record(v.string(), v.string())),
-    deletedAt: v.optional(v.number()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
+    status: studentStatus,
+    /** name + father + phones, lower-cased, for search. */
+    searchText: v.string(),
   })
-    .index("by_academyId", ["academyId"])
-    .index("by_batchId", ["batchId"])
-    .index("by_academy_deleted", ["academyId", "deletedAt"]),
+    .index("by_academyId_and_status", ["academyId", "status"])
+    .index("by_batchId_and_status", ["batchId", "status"])
+    .index("by_academyId_and_code", ["academyId", "code"])
+    .searchIndex("search_text", {
+      searchField: "searchText",
+      filterFields: ["academyId", "status"],
+    }),
 
-  fees: defineTable({
+  invoices: defineTable({
     academyId: v.id("academies"),
     studentId: v.id("students"),
     month: v.string(),
-    feeAmount: v.number(),
+    amount: v.number(),
     discount: v.number(),
-    amountPaid: v.number(),
-    balance: v.number(),
-    status: v.union(
-      v.literal("paid"),
-      v.literal("partial"),
-      v.literal("due"),
-      v.literal("overdue")
-    ),
-    paymentMethod: v.optional(v.string()),
-    paymentDate: v.optional(v.string()),
+    /** Sum of non-voided payments; only changed through lib/money.ts. */
+    paid: v.number(),
     dueDate: v.string(),
-    remarks: v.optional(v.string()),
-    deletedAt: v.optional(v.number()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
+    voidedAt: v.optional(v.number()),
+    voidReason: v.optional(v.string()),
   })
-    .index("by_academyId", ["academyId"])
-    .index("by_studentId", ["studentId"])
-    .index("by_academy_month", ["academyId", "month"])
-    .index("by_academy_deleted", ["academyId", "deletedAt"]),
+    .index("by_academyId_and_month", ["academyId", "month"])
+    .index("by_studentId_and_month", ["studentId", "month"]),
+
+  payments: defineTable({
+    academyId: v.id("academies"),
+    invoiceId: v.id("invoices"),
+    studentId: v.id("students"),
+    amount: v.number(),
+    method: paymentMethod,
+    date: v.string(),
+    receiptNo: v.number(),
+    recordedBy: v.id("users"),
+    voidedAt: v.optional(v.number()),
+    voidReason: v.optional(v.string()),
+  })
+    .index("by_invoiceId", ["invoiceId"])
+    .index("by_academyId_and_date", ["academyId", "date"])
+    .index("by_studentId_and_date", ["studentId", "date"]),
 
   attendance: defineTable({
     academyId: v.id("academies"),
-    studentId: v.id("students"),
     batchId: v.id("batches"),
+    studentId: v.id("students"),
     date: v.string(),
-    status: v.union(v.literal("present"), v.literal("absent"), v.literal("late")),
-    remarks: v.optional(v.string()),
-    deletedAt: v.optional(v.number()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
+    status: attendanceStatus,
   })
-    .index("by_academyId", ["academyId"])
-    .index("by_studentId", ["studentId"])
-    .index("by_batch_date", ["batchId", "date"])
-    .index("by_academy_deleted", ["academyId", "deletedAt"]),
+    .index("by_batchId_and_date", ["batchId", "date"])
+    .index("by_studentId_and_date", ["studentId", "date"])
+    .index("by_academyId_and_date", ["academyId", "date"]),
+
+  tests: defineTable({
+    academyId: v.id("academies"),
+    batchId: v.id("batches"),
+    title: v.string(),
+    subject: v.optional(v.string()),
+    date: v.string(),
+    totalMarks: v.number(),
+  })
+    .index("by_academyId_and_date", ["academyId", "date"])
+    .index("by_batchId_and_date", ["batchId", "date"]),
+
+  results: defineTable({
+    academyId: v.id("academies"),
+    testId: v.id("tests"),
+    studentId: v.id("students"),
+    marks: v.number(),
+  })
+    .index("by_testId", ["testId"])
+    .index("by_studentId", ["studentId"]),
+
+  slots: defineTable({
+    academyId: v.id("academies"),
+    batchId: v.id("batches"),
+    day: v.number(),
+    startTime: v.string(),
+    endTime: v.string(),
+    subject: v.string(),
+    teacherName: v.string(),
+  })
+    .index("by_academyId_and_day", ["academyId", "day"])
+    .index("by_batchId_and_day", ["batchId", "day"]),
+
+  notices: defineTable({
+    academyId: v.id("academies"),
+    /** Unset = whole academy. */
+    batchId: v.optional(v.id("batches")),
+    title: v.string(),
+    body: v.string(),
+    authorId: v.id("users"),
+  }).index("by_academyId", ["academyId"]),
 
   expenses: defineTable({
     academyId: v.id("academies"),
@@ -157,105 +214,14 @@ export default defineSchema({
     category: v.string(),
     description: v.string(),
     amount: v.number(),
-    paidBy: v.string(),
-    paymentMethod: v.optional(v.string()),
-    deletedAt: v.optional(v.number()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_academyId", ["academyId"])
-    .index("by_academy_date", ["academyId", "date"])
-    .index("by_academy_deleted", ["academyId", "deletedAt"]),
+    voidedAt: v.optional(v.number()),
+    voidReason: v.optional(v.string()),
+  }).index("by_academyId_and_date", ["academyId", "date"]),
 
-  tests: defineTable({
-    academyId: v.id("academies"),
-    batchId: v.id("batches"),
-    name: v.string(),
-    subject: v.optional(v.string()),
-    date: v.string(),
-    totalMarks: v.number(),
-    deletedAt: v.optional(v.number()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_academyId", ["academyId"])
-    .index("by_batchId", ["batchId"])
-    .index("by_academy_deleted", ["academyId", "deletedAt"]),
-
-  results: defineTable({
-    academyId: v.id("academies"),
-    testId: v.id("tests"),
-    studentId: v.id("students"),
-    marksObtained: v.number(),
-    remarks: v.optional(v.string()),
-    deletedAt: v.optional(v.number()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_testId", ["testId"])
-    .index("by_studentId", ["studentId"])
-    .index("by_academy_deleted", ["academyId", "deletedAt"]),
-
-  timetable: defineTable({
-    academyId: v.id("academies"),
-    batchId: v.id("batches"),
-    teacherId: v.id("teachers"),
-    day: v.string(),
-    startTime: v.string(),
-    endTime: v.string(),
-    subject: v.string(),
-    deletedAt: v.optional(v.number()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_academyId", ["academyId"])
-    .index("by_batchId", ["batchId"])
-    .index("by_academy_deleted", ["academyId", "deletedAt"]),
-
-  salaries: defineTable({
-    academyId: v.id("academies"),
-    teacherId: v.id("teachers"),
-    month: v.string(),
-    baseAmount: v.number(),
-    bonus: v.number(),
-    deduction: v.number(),
-    amountPaid: v.number(),
-    status: v.union(v.literal("pending"), v.literal("paid")),
-    paidDate: v.optional(v.string()),
-    deletedAt: v.optional(v.number()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_academyId", ["academyId"])
-    .index("by_teacherId", ["teacherId"])
-    .index("by_academy_month", ["academyId", "month"])
-    .index("by_academy_deleted", ["academyId", "deletedAt"]),
-
-  customFields: defineTable({
-    academyId: v.id("academies"),
-    label: v.string(),
-    key: v.string(),
-    createdAt: v.number(),
-  }).index("by_academyId", ["academyId"]),
-
-  whatsappLogs: defineTable({
-    academyId: v.id("academies"),
-    studentId: v.id("students"),
-    messageType: v.string(),
-    phoneNumber: v.string(),
-    message: v.string(),
-    createdAt: v.number(),
-  })
-    .index("by_academyId", ["academyId"])
-    .index("by_studentId", ["studentId"]),
-
-  activityLogs: defineTable({
+  auditLog: defineTable({
     academyId: v.id("academies"),
     userId: v.id("users"),
     action: v.string(),
-    detail: v.optional(v.string()),
-    createdAt: v.number(),
-  })
-    .index("by_academyId", ["academyId"])
-    .index("by_userId", ["userId"]),
+    detail: v.string(),
+  }).index("by_academyId", ["academyId"]),
 });

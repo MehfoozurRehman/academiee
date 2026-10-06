@@ -22,7 +22,8 @@
       "supportsTablet": true,
       "requireFullScreen": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleAllowMixedLocalizations": true
       }
     },
     "android": {
@@ -36,20 +37,30 @@
       "package": "com.academiee.app"
     },
     "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "output": "single",
+      "favicon": "./assets/images/favicon.png",
+      "name": "Academiee",
+      "themeColor": "#3846C8"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#5B4BE8",
+          "backgroundColor": "#F7F6F3",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 160
+          "imageWidth": 160,
+          "dark": {
+            "backgroundColor": "#121316"
+          }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-font",
+        {}
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -59,7 +70,8 @@
       "router": {},
       "eas": {
         "projectId": "4f29464a-c6fd-43ef-895d-ae742074eca0"
-      }
+      },
+      "supportsRTL": true
     },
     "owner": "devscot.com"
   }
