@@ -1,6 +1,5 @@
 {
-  "cleanUrls": true,
-  "rewrites": [{ "source": "/((?!_expo|assets|favicon).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "headers": [
     {
       "source": "/_expo/(.*)",
