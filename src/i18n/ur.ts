@@ -113,6 +113,7 @@ export const ur: Dictionary = {
     recentPayments: "حالیہ ادائیگیاں",
   },
   home: {
+    monthsOverdue: "{count} مہینے",
     net: "اس مہینے کا خالص",
     todaysClasses: "آج کی کلاسز",
     noFollowUps: "کوئی بھی تاخیر شدہ نہیں۔ بہترین ہے۔",

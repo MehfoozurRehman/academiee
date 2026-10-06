@@ -11,9 +11,12 @@ export function ListRow({
   title,
   subtitle,
   trailing,
+  action,
   onPress,
-  chevron = !!onPress,
+  chevron = !!onPress && !action,
 }: {
+  /** An interactive control (button) shown at the end, outside the row's own tap area. */
+  action?: ReactNode;
   leading?: ReactNode;
   title: string;
   subtitle?: string;
@@ -48,11 +51,20 @@ export function ListRow({
     </View>
   );
 
-  if (!onPress) return body;
-  return (
-    <Pressable scaleTo={0.99} onPress={onPress} accessibilityRole="button">
+  const row = onPress ? (
+    <Pressable scaleTo={0.99} onPress={onPress} accessibilityRole="button" style={action ? { flex: 1 } : undefined}>
       {body}
     </Pressable>
+  ) : (
+    body
+  );
+  if (!action) return row;
+  // Buttons can't live inside the row's button, so the action sits beside it.
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      {onPress ? row : <View style={{ flex: 1 }}>{row}</View>}
+      <View style={{ paddingEnd: space.lg }}>{action}</View>
+    </View>
   );
 }
 

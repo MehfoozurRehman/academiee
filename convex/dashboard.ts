@@ -36,20 +36,46 @@ export const summary = query({
       if (st !== "voided") counts[st]++;
     }
 
-    const overdue = live
-      .filter((i) => feeStatus({ ...i, voided: false }, args.today) === "overdue")
-      .sort((a, b) => feeBalance(b) - feeBalance(a))
-      .slice(0, 6);
+    // Follow-ups look back a year, not just this month: an unpaid fee from
+    // two months ago matters more than one due next week. Grouped per student.
+    const [y, m] = args.month.split("-").map(Number);
+    const start = new Date(y, m - 12, 1);
+    const fromMonth = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`;
+    const recent = await ctx.db
+      .query("invoices")
+      .withIndex("by_academyId_and_month", (q) =>
+        q.eq("academyId", args.academyId).gte("month", fromMonth).lte("month", args.month)
+      )
+      .take(10000);
+    const owed = new Map<string, { studentId: (typeof recent)[number]["studentId"]; invoiceId: (typeof recent)[number]["_id"]; balance: number; months: number; oldest: string }>();
+    for (const i of recent) {
+      if (i.voidedAt !== undefined) continue;
+      if (feeStatus({ ...i, voided: false }, args.today) !== "overdue") continue;
+      const prev = owed.get(i.studentId);
+      if (!prev) {
+        owed.set(i.studentId, { studentId: i.studentId, invoiceId: i._id, balance: feeBalance(i), months: 1, oldest: i.month });
+      } else {
+        prev.balance += feeBalance(i);
+        prev.months += 1;
+        if (i.month < prev.oldest) {
+          prev.oldest = i.month;
+          prev.invoiceId = i._id;
+        }
+      }
+    }
+    const ranked = [...owed.values()].sort((a, b) => b.balance - a.balance);
+    const overdueTotal = ranked.reduce((sum, r) => sum + r.balance, 0);
     const followUps = await Promise.all(
-      overdue.map(async (i) => {
-        const s = await ctx.db.get("students", i.studentId);
+      ranked.slice(0, 6).map(async (r) => {
+        const s = await ctx.db.get("students", r.studentId);
         return {
-          invoiceId: i._id,
-          studentId: i.studentId,
+          invoiceId: r.invoiceId,
+          studentId: r.studentId,
           studentName: s?.name ?? "—",
           studentCode: s?.code ?? "",
           parentPhone: s?.parentPhone ?? "",
-          balance: feeBalance(i),
+          balance: r.balance,
+          months: r.months,
         };
       })
     );
@@ -91,6 +117,8 @@ export const summary = query({
       outstanding: expected - collected,
       counts,
       followUps,
+      overdueStudents: ranked.length,
+      overdueTotal,
       attendanceRate: att.length ? Math.round((attended / att.length) * 100) : null,
       expenses,
       net: collected - expenses,

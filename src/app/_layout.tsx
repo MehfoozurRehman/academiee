@@ -15,6 +15,7 @@ import {
   PlusJakartaSans_700Bold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { loadAsync } from "expo-font";
+import { Asset } from "expo-asset";
 import { ThemeProvider, useTheme } from "../theme/ThemeProvider";
 import { I18nProvider, useI18n } from "../i18n/I18nProvider";
 import { ToastProvider } from "../components/ui";
@@ -30,6 +31,24 @@ const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
 // Sessions live in secure storage on phones and localStorage on the web.
 const authStorage = Platform.OS === "web" ? undefined : storage;
 
+const URDU_400 = require("@expo-google-fonts/noto-nastaliq-urdu/400Regular/NotoNastaliqUrdu_400Regular.ttf");
+const URDU_700 = require("@expo-google-fonts/noto-nastaliq-urdu/700Bold/NotoNastaliqUrdu_700Bold.ttf");
+
+// On the web the Urdu face is limited to Arabic-script characters, so Latin
+// names, codes and numbers inside Urdu text use the app's normal Latin font
+// instead of Nastaliq's own (serif-looking) Latin letters.
+function injectUrduWebFonts() {
+  if (typeof document === "undefined" || document.getElementById("urdu-fonts")) return;
+  const range = "U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F";
+  const face = (family: string, src: string) =>
+    `@font-face{font-family:${family};src:url(${src}) format("truetype");font-display:swap;unicode-range:${range};}`;
+  const style = document.createElement("style");
+  style.id = "urdu-fonts";
+  style.textContent =
+    face("UrduWeb400", Asset.fromModule(URDU_400).uri) + face("UrduWeb700", Asset.fromModule(URDU_700).uri);
+  document.head.appendChild(style);
+}
+
 function Shell() {
   const { scheme, colors } = useTheme();
   const { lang } = useI18n();
@@ -37,9 +56,13 @@ function Shell() {
   // The Urdu typeface is large, so it's fetched only once Urdu is chosen.
   useEffect(() => {
     if (lang !== "ur") return;
+    if (Platform.OS === "web") {
+      injectUrduWebFonts();
+      return;
+    }
     loadAsync({
-      NotoNastaliqUrdu_400Regular: require("@expo-google-fonts/noto-nastaliq-urdu/400Regular/NotoNastaliqUrdu_400Regular.ttf"),
-      NotoNastaliqUrdu_700Bold: require("@expo-google-fonts/noto-nastaliq-urdu/700Bold/NotoNastaliqUrdu_700Bold.ttf"),
+      NotoNastaliqUrdu_400Regular: URDU_400,
+      NotoNastaliqUrdu_700Bold: URDU_700,
     }).catch(() => {});
   }, [lang]);
 

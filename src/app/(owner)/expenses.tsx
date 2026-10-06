@@ -41,7 +41,12 @@ export default function Expenses() {
   const [month, setMonth] = useState(currentMonth);
   const data = useQuery(api.expenses.list, { academyId, month });
 
-  const catLabel = (c: string) => t(`expenses.cat_${c}` as TKey);
+  // Unknown categories (e.g. imported data) fall back to the raw name.
+  const catLabel = (c: string) => {
+    const key = `expenses.cat_${c.toLowerCase()}` as TKey;
+    const label = t(key);
+    return label === key ? c : label;
+  };
 
   // Add
   const [addOpen, setAddOpen] = useState(false);

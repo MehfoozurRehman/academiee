@@ -280,7 +280,7 @@ export const demo = internalMutation({
           const [year, monthNum] = month.split("-");
           const daysInMonth = new Date(parseInt(year), parseInt(monthNum), 0).getDate();
           const paymentDay = Math.floor(Math.random() * daysInMonth) + 1;
-          const paymentDate = `${month}-${String(paymentDay).padStart(2, "0")}`;
+          const paymentDate = notAfterToday(`${month}-${String(paymentDay).padStart(2, "0")}`);
 
           const methods: Array<"cash" | "bank" | "jazzcash" | "easypaisa"> = [
             "cash",
@@ -359,7 +359,7 @@ export const demo = internalMutation({
 
       for (let t = 0; t < 2; t++) {
         const testDay = Math.floor(Math.random() * 25) + 1;
-        const testDate = `${currentMonth}-${String(testDay).padStart(2, "0")}`;
+        const testDate = notAfterToday(`${currentMonth}-${String(testDay).padStart(2, "0")}`);
         const totalMarks = Math.random() > 0.5 ? 50 : 25;
 
         const testId = await ctx.db.insert("tests", {
@@ -445,24 +445,24 @@ export const demo = internalMutation({
 
     // Create expenses (6 total, 3 this month, 3 last month)
     const expenseCategories = [
-      { cat: "Rent", amount: 45000 },
-      { cat: "Utilities", amount: 8000 },
-      { cat: "Supplies", amount: 3500 },
-      { cat: "Salaries", amount: 120000 },
-      { cat: "Maintenance", amount: 5000 },
-      { cat: "Internet", amount: 2000 },
+      { cat: "rent", label: "Rent", amount: 45000 },
+      { cat: "utilities", label: "Electricity bill", amount: 8000 },
+      { cat: "supplies", label: "Markers and registers", amount: 3500 },
+      { cat: "salaries", label: "Teacher salaries", amount: 120000 },
+      { cat: "maintenance", label: "AC repair", amount: 5000 },
+      { cat: "utilities", label: "Internet", amount: 2000 },
     ];
 
     for (let e = 0; e < 3; e++) {
       const expCat = expenseCategories[e % expenseCategories.length];
       const day = Math.floor(Math.random() * 28) + 1;
-      const date = `${currentMonth}-${String(day).padStart(2, "0")}`;
+      const date = notAfterToday(`${currentMonth}-${String(day).padStart(2, "0")}`);
 
       await ctx.db.insert("expenses", {
         academyId: academy._id,
         date,
         category: expCat.cat,
-        description: `${expCat.cat} for ${currentMonth}`,
+        description: expCat.label,
         amount: expCat.amount,
       });
     }
@@ -476,7 +476,7 @@ export const demo = internalMutation({
         academyId: academy._id,
         date,
         category: expCat.cat,
-        description: `${expCat.cat} for ${prevMonth}`,
+        description: expCat.label,
         amount: expCat.amount,
       });
     }
@@ -522,6 +522,12 @@ function getDateDaysAgo(daysAgo: number): string {
   const date = new Date();
   date.setDate(date.getDate() - daysAgo);
   return formatDate(date);
+}
+
+/** Demo data must never be dated in the future. */
+function notAfterToday(date: string): string {
+  const today = formatDate(new Date());
+  return date > today ? today : date;
 }
 
 function formatDate(date: Date): string {

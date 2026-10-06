@@ -4,6 +4,7 @@ import { useTheme } from "../../theme/ThemeProvider";
 import {
   fonts,
   type,
+  urduFamily,
   urduScale,
   type ColorName,
   type TypeVariant,
@@ -39,7 +40,10 @@ export function Text({
 
   const size = urdu ? Math.round(spec.size * urduScale.size) : spec.size;
   const leading = urdu ? urduScale.leading : spec.leading;
-  const family = (urdu ? fonts.urdu : fonts.latin)[weight ?? spec.weight];
+  const w = weight ?? spec.weight;
+  // On the web, Latin words inside Urdu text (names, codes) fall back to the
+  // app's Latin face instead of the browser's default serif.
+  const family = urdu ? urduFamily(w, Platform.OS === "web") : fonts.latin[w];
 
   // Native already swaps left/right when the app is in RTL mode; on web we
   // resolve start/end ourselves.
@@ -58,7 +62,8 @@ export function Text({
           letterSpacing: urdu ? 0 : spec.tracking,
           color: colors[color],
           textAlign,
-          writingDirection: urdu ? "rtl" : rtl ? "rtl" : "ltr",
+          // Latin runs (times, amounts, codes) keep their own order inside Urdu.
+          writingDirection: latin ? "ltr" : rtl ? "rtl" : "ltr",
           fontVariant: tabular ? ["tabular-nums"] : undefined,
         },
         style,
