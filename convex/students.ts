@@ -2,7 +2,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { studentStatus } from "./schema";
-import { audit, fail, ownedDoc, requireOwner } from "./lib/access";
+import { audit, fail, findOwned, ownedDoc, requireOwner } from "./lib/access";
 import { randomDigits, sha256 } from "./lib/crypto";
 import { joinBatch, leaveBatch } from "./lib/enrolment";
 import { feeBalance, feeStatus } from "../src/lib/logic/fees";
@@ -79,7 +79,8 @@ export const get = query({
   args: { academyId: v.id("academies"), studentId: v.id("students"), today: v.string() },
   handler: async (ctx, args) => {
     await requireOwner(ctx, args.academyId);
-    const student = await ownedDoc(ctx, "students", args.studentId, args.academyId);
+    const student = await findOwned(ctx, "students", args.studentId, args.academyId);
+    if (!student) return null;
     const batch = await ctx.db.get("batches", student.batchId);
     const course = batch ? await ctx.db.get("courses", batch.courseId) : null;
 

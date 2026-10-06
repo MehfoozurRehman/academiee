@@ -76,6 +76,17 @@ export async function ownedDoc<T extends "students" | "batches" | "courses" | "i
   return doc;
 }
 
+/** Like ownedDoc, but returns null (for detail pages showing "not found"). */
+export async function findOwned<T extends "students" | "invoices" | "tests">(
+  ctx: Ctx,
+  table: T,
+  id: Id<T>,
+  academyId: Id<"academies">
+): Promise<Doc<T> | null> {
+  const doc = (await ctx.db.get(table, id)) as (Doc<T> & { academyId: Id<"academies"> }) | null;
+  return doc && doc.academyId === academyId ? doc : null;
+}
+
 export async function audit(
   ctx: MutationCtx,
   academyId: Id<"academies">,

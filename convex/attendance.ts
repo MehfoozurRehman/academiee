@@ -28,7 +28,7 @@ export const forBatchDay = query({
       isClassDay: batch.days.includes(weekdayOf(args.date)),
       students: students
         .sort((a, b) => a.name.localeCompare(b.name))
-        .map((s) => ({ _id: s._id, name: s.name, code: s.code, status: byStudent.get(s._id) ?? null })),
+        .map((s) => ({ _id: s._id, name: s.name, code: s.code, parentPhone: s.parentPhone, status: byStudent.get(s._id) ?? null })),
     };
   },
 });

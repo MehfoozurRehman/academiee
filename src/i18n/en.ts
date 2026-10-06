@@ -32,6 +32,7 @@ export const en = {
     today: "Today",
     thisMonth: "This month",
     optional: "Optional",
+    notFound: "This page doesn't exist or you don't have access to it.",
   },
   settings: {
     language: "Language",

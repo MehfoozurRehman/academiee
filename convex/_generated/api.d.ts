@@ -25,6 +25,7 @@ import type * as lib_dates from "../lib/dates.js";
 import type * as lib_enrolment from "../lib/enrolment.js";
 import type * as notices from "../notices.js";
 import type * as portal from "../portal.js";
+import type * as seed from "../seed.js";
 import type * as students from "../students.js";
 
 import type {
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   "lib/enrolment": typeof lib_enrolment;
   notices: typeof notices;
   portal: typeof portal;
+  seed: typeof seed;
   students: typeof students;
 }>;
 
