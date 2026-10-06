@@ -1,257 +1,183 @@
 import { v } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query } from "./_generated/server";
+import { audit, fail, isPlatformAdmin, requireOwner, requireUserId } from "./lib/access";
 
-export const createAcademy = mutation({
-  args: {
-    ownerId: v.id("users"),
-    name: v.string(),
-    phone: v.string(),
-    email: v.string(),
-    address: v.string(),
-    city: v.string(),
-    country: v.string(),
-    currency: v.string(),
-    whatsappNumber: v.string(),
-  },
-  async handler(ctx, args) {
-    const owner = await ctx.db.get(args.ownerId);
-    if (!owner) {
-      throw new Error("User not found");
+/** Everything the app needs to route a signed-in person. */
+export const me = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const user = await ctx.db.get("users", userId);
+    if (!user) return null;
+
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .take(50);
+
+    const owned = await ctx.db
+      .query("academies")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", userId))
+      .take(50);
+
+    const studentMembership = memberships.find((m) => m.role === "student");
+    let student = null;
+    if (studentMembership?.studentId) {
+      const s = await ctx.db.get("students", studentMembership.studentId);
+      const a = s ? await ctx.db.get("academies", s.academyId) : null;
+      if (s && a) {
+        student = {
+          name: s.name,
+          code: s.code,
+          active: s.status === "active",
+          academyName: a.name,
+          suspended: a.suspendedAt !== undefined,
+        };
+      }
     }
-    if (owner.role === "admin") {
-      throw new Error("Admins cannot create academies");
+
+    return {
+      userId,
+      name: user.name ?? null,
+      email: user.email ?? null,
+      isAdmin: await isPlatformAdmin(ctx, userId),
+      academies: owned.map((a) => ({
+        _id: a._id,
+        name: a.name,
+        code: a.code,
+        city: a.city ?? null,
+        suspended: a.suspendedAt !== undefined,
+      })),
+      student,
+    };
+  },
+});
+
+function codeFromName(name: string) {
+  const letters = name.toUpperCase().replace(/[^A-Z]/g, "");
+  return (letters.slice(0, 6) || "ACAD").padEnd(4, "X");
+}
+
+export const create = mutation({
+  args: {
+    name: v.string(),
+    city: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    whatsapp: v.optional(v.string()),
+    address: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const student = await ctx.db
+      .query("memberships")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("role"), "student"))
+      .first();
+    if (student) fail("FORBIDDEN", "Student accounts can't create academies.");
+
+    const name = args.name.trim();
+    if (name.length < 2 || name.length > 80) fail("INVALID", "Enter the academy's name.");
+
+    const owned = await ctx.db
+      .query("academies")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", userId))
+      .take(21);
+    if (owned.length >= 20) fail("LIMIT", "You can run up to 20 academies.");
+
+    // Short, readable, unique code: BRIGHT, BRIGHT2, BRIGHT3…
+    const base = codeFromName(name);
+    let code = base;
+    for (let n = 2; ; n++) {
+      const taken = await ctx.db
+        .query("academies")
+        .withIndex("by_code", (q) => q.eq("code", code))
+        .unique();
+      if (!taken) break;
+      code = `${base}${n}`;
     }
 
     const academyId = await ctx.db.insert("academies", {
-      ownerId: args.ownerId,
-      name: args.name,
-      phone: args.phone,
-      email: args.email,
-      address: args.address,
-      city: args.city,
-      country: args.country,
-      currency: args.currency,
-      whatsappNumber: args.whatsappNumber,
-      status: "active",
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      name,
+      code,
+      ownerId: userId,
+      city: args.city?.trim() || undefined,
+      phone: args.phone?.trim() || undefined,
+      whatsapp: args.whatsapp?.trim() || undefined,
+      address: args.address?.trim() || undefined,
+      feeDueDay: 10,
+      studentSeq: 0,
+      receiptSeq: 0,
     });
-
-    return { academyId, name: args.name };
+    await ctx.db.insert("memberships", { userId, academyId, role: "owner" });
+    await audit(ctx, academyId, userId, "academy.created", name);
+    return { academyId, code };
   },
 });
 
-export const getMyAcademies = query({
-  args: { ownerId: v.id("users") },
-  async handler(ctx, args) {
-    const academies = await ctx.db
-      .query("academies")
-      .withIndex("by_ownerId", (q) => q.eq("ownerId", args.ownerId))
-      .collect();
-
-    const active = academies.filter((a) => a.deletedAt === undefined);
-
-    return Promise.all(
-      active.map(async (a) => {
-        const students = await ctx.db
-          .query("students")
-          .withIndex("by_academy_deleted", (q) =>
-            q.eq("academyId", a._id).eq("deletedAt", undefined)
-          )
-          .collect();
-
-        return {
-          academyId: a._id,
-          name: a.name,
-          city: a.city,
-          logo: a.logo,
-          currency: a.currency,
-          status: a.status,
-          studentCount: students.length,
-        };
-      })
-    );
-  },
-});
-
-export const getAcademy = query({
+export const get = query({
   args: { academyId: v.id("academies") },
-  async handler(ctx, args) {
-    const academy = await ctx.db.get(args.academyId);
-    if (!academy || academy.deletedAt !== undefined) {
-      return null;
-    }
-
-    return {
-      academyId: academy._id,
-      ownerId: academy.ownerId,
-      name: academy.name,
-      phone: academy.phone,
-      email: academy.email,
-      address: academy.address,
-      city: academy.city,
-      country: academy.country,
-      currency: academy.currency,
-      whatsappNumber: academy.whatsappNumber,
-      logo: academy.logo,
-      status: academy.status,
-    };
+  handler: async (ctx, args) => {
+    const { academy } = await requireOwner(ctx, args.academyId);
+    return academy;
   },
 });
 
-export const updateAcademy = mutation({
+export const update = mutation({
   args: {
     academyId: v.id("academies"),
-    name: v.optional(v.string()),
-    phone: v.optional(v.string()),
-    email: v.optional(v.string()),
-    address: v.optional(v.string()),
+    name: v.string(),
     city: v.optional(v.string()),
-    country: v.optional(v.string()),
-    currency: v.optional(v.string()),
-    whatsappNumber: v.optional(v.string()),
-    logo: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    whatsapp: v.optional(v.string()),
+    address: v.optional(v.string()),
+    feeDueDay: v.number(),
   },
-  async handler(ctx, args) {
-    const { academyId, ...fields } = args;
-
-    const academy = await ctx.db.get(academyId);
-    if (!academy) {
-      throw new Error("Academy not found");
+  handler: async (ctx, args) => {
+    const { userId } = await requireOwner(ctx, args.academyId);
+    const name = args.name.trim();
+    if (name.length < 2 || name.length > 80) fail("INVALID", "Enter the academy's name.");
+    if (!Number.isInteger(args.feeDueDay) || args.feeDueDay < 1 || args.feeDueDay > 28) {
+      fail("INVALID", "Fee due day must be between 1 and 28.");
     }
-
-    const updates: Record<string, unknown> = { updatedAt: Date.now() };
-    for (const [key, value] of Object.entries(fields)) {
-      if (value !== undefined) updates[key] = value;
-    }
-
-    await ctx.db.patch(academyId, updates);
-    return { academyId };
+    await ctx.db.patch("academies", args.academyId, {
+      name,
+      city: args.city?.trim() || undefined,
+      phone: args.phone?.trim() || undefined,
+      whatsapp: args.whatsapp?.trim() || undefined,
+      address: args.address?.trim() || undefined,
+      feeDueDay: args.feeDueDay,
+    });
+    await audit(ctx, args.academyId, userId, "academy.updated", name);
   },
 });
 
-export const listAllForAdmin = query({
-  args: { adminId: v.id("users") },
-  async handler(ctx, args) {
-    const admin = await ctx.db.get(args.adminId);
-    if (!admin || admin.role !== "admin") {
-      throw new Error("Not authorised");
-    }
+/** Owner's display name (shown on receipts and greetings). */
+export const setMyName = mutation({
+  args: { name: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const name = args.name.trim();
+    if (name.length < 2 || name.length > 60) fail("INVALID", "Enter your name.");
+    await ctx.db.patch("users", userId, { name });
+  },
+});
 
-    const academies = await ctx.db.query("academies").collect();
-    const active = academies.filter((a) => a.deletedAt === undefined);
-
+export const auditLog = query({
+  args: { academyId: v.id("academies") },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.academyId);
+    const rows = await ctx.db
+      .query("auditLog")
+      .withIndex("by_academyId", (q) => q.eq("academyId", args.academyId))
+      .order("desc")
+      .take(100);
     return Promise.all(
-      active.map(async (a) => {
-        const owner = await ctx.db.get(a.ownerId);
-
-        const students = await ctx.db
-          .query("students")
-          .withIndex("by_academy_deleted", (q) =>
-            q.eq("academyId", a._id).eq("deletedAt", undefined)
-          )
-          .collect();
-
-        const teachers = await ctx.db
-          .query("teachers")
-          .withIndex("by_academy_deleted", (q) =>
-            q.eq("academyId", a._id).eq("deletedAt", undefined)
-          )
-          .collect();
-
-        return {
-          academyId: a._id,
-          name: a.name,
-          city: a.city,
-          status: a.status,
-          ownerName: owner?.name ?? "Unknown",
-          ownerEmail: owner?.email ?? "",
-          studentCount: students.length,
-          teacherCount: teachers.length,
-          createdAt: a.createdAt,
-        };
+      rows.map(async (r) => {
+        const user = await ctx.db.get("users", r.userId);
+        return { ...r, userName: user?.name ?? user?.email ?? "—" };
       })
     );
-  },
-});
-
-export const getDashboard = query({
-  args: {
-    academyId: v.id("academies"),
-    month: v.string(),
-  },
-  async handler(ctx, args) {
-    const students = await ctx.db
-      .query("students")
-      .withIndex("by_academy_deleted", (q) =>
-        q.eq("academyId", args.academyId).eq("deletedAt", undefined)
-      )
-      .collect();
-
-    const teachers = await ctx.db
-      .query("teachers")
-      .withIndex("by_academy_deleted", (q) =>
-        q.eq("academyId", args.academyId).eq("deletedAt", undefined)
-      )
-      .collect();
-
-    const batches = await ctx.db
-      .query("batches")
-      .withIndex("by_academy_deleted", (q) =>
-        q.eq("academyId", args.academyId).eq("deletedAt", undefined)
-      )
-      .collect();
-
-    const allFees = await ctx.db
-      .query("fees")
-      .withIndex("by_academy_deleted", (q) =>
-        q.eq("academyId", args.academyId).eq("deletedAt", undefined)
-      )
-      .collect();
-
-    const monthFees = allFees.filter((f) => f.month === args.month);
-
-    const collected = monthFees.reduce((sum, f) => sum + f.amountPaid, 0);
-    const outstanding = monthFees.reduce((sum, f) => sum + f.balance, 0);
-
-    const expenses = await ctx.db
-      .query("expenses")
-      .withIndex("by_academy_deleted", (q) =>
-        q.eq("academyId", args.academyId).eq("deletedAt", undefined)
-      )
-      .collect();
-
-    const monthExpenses = expenses
-      .filter((e) => e.date.startsWith(args.month))
-      .reduce((sum, e) => sum + e.amount, 0);
-
-    const attendance = await ctx.db
-      .query("attendance")
-      .withIndex("by_academy_deleted", (q) =>
-        q.eq("academyId", args.academyId).eq("deletedAt", undefined)
-      )
-      .collect();
-
-    const monthAttendance = attendance.filter((a) => a.date.startsWith(args.month));
-    const presentCount = monthAttendance.filter((a) => a.status === "present").length;
-
-    return {
-      totalStudents: students.length,
-      activeStudents: students.filter((s) => s.status === "active").length,
-      totalTeachers: teachers.length,
-      activeBatches: batches.filter((b) => b.status === "active").length,
-      collected,
-      outstanding,
-      expenses: monthExpenses,
-      net: collected - monthExpenses,
-      attendanceRate:
-        monthAttendance.length > 0
-          ? Math.round((presentCount / monthAttendance.length) * 100)
-          : 0,
-      feesPaid: monthFees.filter((f) => f.status === "paid").length,
-      feesPartial: monthFees.filter((f) => f.status === "partial").length,
-      feesDue: monthFees.filter((f) => f.status === "due").length,
-      feesOverdue: monthFees.filter((f) => f.status === "overdue").length,
-    };
   },
 });

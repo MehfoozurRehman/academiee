@@ -1,178 +1,89 @@
-import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { hashPassword, verifyPassword } from "./passwords";
+import { ConvexCredentials } from "@convex-dev/auth/providers/ConvexCredentials";
+import {
+  convexAuth,
+  createAccount,
+  retrieveAccount,
+  type GenericActionCtxWithAuthConfig,
+} from "@convex-dev/auth/server";
+import { ConvexError } from "convex/values";
+import type { DataModel, Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 
-const ADMIN_EMAIL = "admin@gmail.com";
-const ADMIN_PASSWORD = "devscot-2026";
+type Ctx = GenericActionCtxWithAuthConfig<DataModel>;
 
-export const signup = mutation({
-  args: {
-    email: v.string(),
-    password: v.string(),
-    name: v.string(),
-    phone: v.optional(v.string()),
-  },
-  async handler(ctx, args) {
-    const email = args.email.trim().toLowerCase();
-
-    if (email === ADMIN_EMAIL) {
-      throw new Error("This email is reserved");
-    }
-    if (args.password.length < 6) {
-      throw new Error("Password must be at least 6 characters");
-    }
-
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .first();
-
-    if (existing) {
-      throw new Error("An account with this email already exists");
-    }
-
-    const userId = await ctx.db.insert("users", {
-      email,
-      password: await hashPassword(args.password),
-      name: args.name.trim(),
-      phone: args.phone,
-      status: "active",
-      role: "academy_owner",
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+// Finds the user behind an account, creating the account (and user) on first
+// sign-in. No secrets are stored on the account: the one-time code has already
+// been checked by the time this runs.
+async function signInAccount(
+  ctx: Ctx,
+  provider: string,
+  id: string,
+  profile: { email?: string; name?: string }
+): Promise<Id<"users">> {
+  try {
+    const { user } = await retrieveAccount(ctx, { provider, account: { id } });
+    return user._id;
+  } catch {
+    const { user } = await createAccount(ctx, {
+      provider,
+      account: { id },
+      profile,
+      shouldLinkViaEmail: false,
     });
+    return user._id;
+  }
+}
 
-    return {
-      userId,
-      email,
-      name: args.name.trim(),
-      role: "academy_owner" as const,
-      academyCount: 0,
-      soleAcademyId: null,
-    };
-  },
-});
+export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
+  providers: [
+    // Academy owners (and super admins): email + 6-digit code.
+    ConvexCredentials({
+      id: "email-code",
+      authorize: async (credentials, ctx) => {
+        const email = String(credentials.email ?? "").trim().toLowerCase();
+        const code = String(credentials.code ?? "").trim();
+        if (!email || !/^\d{6}$/.test(code)) return null;
 
-export const login = mutation({
-  args: {
-    email: v.string(),
-    password: v.string(),
-  },
-  async handler(ctx, args) {
-    const email = args.email.trim().toLowerCase();
+        const ok: boolean = await ctx.runMutation(internal.authCodes.consumeEmailCode, {
+          email,
+          code,
+        });
+        if (!ok) throw new ConvexError({ code: "INVALID_CODE", message: "That code is wrong or has expired." });
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .first();
+        const userId = await signInAccount(ctx, "email-code", email, { email });
+        await ctx.runMutation(internal.authCodes.afterOwnerSignIn, { userId, email });
+        return { userId };
+      },
+    }),
 
-    if (!user || !(await verifyPassword(args.password, user.password))) {
-      throw new Error("Incorrect email or password");
-    }
+    // Students: academy code + student ID + one-time code from the owner.
+    ConvexCredentials({
+      id: "student-code",
+      authorize: async (credentials, ctx) => {
+        const academyCode = String(credentials.academyCode ?? "").trim().toUpperCase();
+        const studentCode = String(credentials.studentCode ?? "").trim().toUpperCase();
+        const code = String(credentials.code ?? "").trim();
+        if (!academyCode || !studentCode || !/^\d{6}$/.test(code)) return null;
 
-    if (user.status !== "active") {
-      throw new Error("This account is inactive");
-    }
+        const student: { studentId: Id<"students">; name: string } | null =
+          await ctx.runMutation(internal.authCodes.consumeStudentCode, {
+            academyCode,
+            studentCode,
+            code,
+          });
+        if (!student) {
+          throw new ConvexError({ code: "INVALID_STUDENT", message: "Those details don't match. Check them with your academy." });
+        }
 
-    if (user.role === "admin") {
-      return {
-        userId: user._id,
-        name: user.name,
-        email: user.email,
-        role: "admin" as const,
-        academyCount: 0,
-        soleAcademyId: null,
-      };
-    }
-
-    const academies = await ctx.db
-      .query("academies")
-      .withIndex("by_ownerId", (q) => q.eq("ownerId", user._id))
-      .collect();
-
-    const active = academies.filter((a) => a.deletedAt === undefined);
-
-    return {
-      userId: user._id,
-      name: user.name,
-      email: user.email,
-      role: "academy_owner" as const,
-      academyCount: active.length,
-      soleAcademyId: active.length === 1 ? active[0]._id : null,
-    };
-  },
-});
-
-export const getCurrentUser = query({
-  args: { userId: v.id("users") },
-  async handler(ctx, args) {
-    const user = await ctx.db.get(args.userId);
-    if (!user) return null;
-
-    return {
-      userId: user._id,
-      email: user.email,
-      name: user.name,
-      phone: user.phone,
-      role: user.role,
-      status: user.status,
-    };
-  },
-});
-
-export const changePassword = mutation({
-  args: {
-    userId: v.id("users"),
-    currentPassword: v.string(),
-    newPassword: v.string(),
-  },
-  async handler(ctx, args) {
-    const user = await ctx.db.get(args.userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    if (!(await verifyPassword(args.currentPassword, user.password))) {
-      throw new Error("Current password is incorrect");
-    }
-    if (args.newPassword.length < 6) {
-      throw new Error("Password must be at least 6 characters");
-    }
-
-    await ctx.db.patch(args.userId, {
-      password: await hashPassword(args.newPassword),
-      updatedAt: Date.now(),
-    });
-
-    return { userId: args.userId };
-  },
-});
-
-export const seedAdmin = mutation({
-  args: {},
-  async handler(ctx) {
-    const password = await hashPassword(ADMIN_PASSWORD);
-
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", ADMIN_EMAIL))
-      .first();
-
-    if (existing) {
-      await ctx.db.patch(existing._id, { password, updatedAt: Date.now() });
-      return { created: false, userId: existing._id };
-    }
-
-    const userId = await ctx.db.insert("users", {
-      email: ADMIN_EMAIL,
-      password,
-      name: "Administrator",
-      status: "active",
-      role: "admin",
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    });
-
-    return { created: true, userId };
-  },
+        const userId = await signInAccount(ctx, "student-code", student.studentId, {
+          name: student.name,
+        });
+        await ctx.runMutation(internal.authCodes.afterStudentSignIn, {
+          userId,
+          studentId: student.studentId,
+        });
+        return { userId };
+      },
+    }),
+  ],
 });

@@ -1,15 +1,18 @@
 import { Redirect } from "expo-router";
-import { useSession } from "../context/session";
-import { Loader } from "../components/ui";
+import { useConvexAuth } from "convex/react";
+import { useMe } from "../context/AcademyContext";
+import { Splash } from "../components/Splash";
 
+// Sends each person to the right place: welcome, academy setup, the owner
+// app, the student portal, or the admin panel.
 export default function Index() {
-  const { session, ready, onboarded } = useSession();
+  const { isLoading, isAuthenticated } = useConvexAuth();
+  const me = useMe();
 
-  if (!ready) return <Loader />;
-  if (!session && !onboarded) return <Redirect href="/onboarding" />;
-  if (!session) return <Redirect href="/login" />;
-  if (session.role === "admin") return <Redirect href="/admin" />;
-  if (!session.academyId) return <Redirect href="/select-academy" />;
-
-  return <Redirect href="/dashboard" />;
+  if (isLoading || (isAuthenticated && me === undefined)) return <Splash />;
+  if (!isAuthenticated || !me) return <Redirect href="/welcome" />;
+  if (me.student) return <Redirect href="/s" />;
+  if (me.academies.length > 0) return <Redirect href="/home" />;
+  if (me.isAdmin) return <Redirect href="/admin" />;
+  return <Redirect href="/setup" />;
 }
