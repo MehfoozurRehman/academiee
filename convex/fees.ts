@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type QueryCtx } from "./_generated/server";
 import { paymentMethod } from "./schema";
-import { audit, fail, ownedDoc, requireOwner, requireUserId } from "./lib/access";
+import { audit, fail, findOwned, ownedDoc, requireOwner, requireUserId } from "./lib/access";
 import { checkPayment, feeBalance, feeStatus } from "../src/lib/logic/fees";
 
 // Money rules: invoices and payments are never deleted, only voided with a
@@ -191,7 +191,8 @@ export const getInvoice = query({
   args: { academyId: v.id("academies"), invoiceId: v.id("invoices"), today: v.string() },
   handler: async (ctx, args) => {
     await requireOwner(ctx, args.academyId);
-    const inv = await ownedDoc(ctx, "invoices", args.invoiceId, args.academyId);
+    const inv = await findOwned(ctx, "invoices", args.invoiceId, args.academyId);
+    if (!inv) return null;
     return invoiceDetail(ctx, inv, args.today);
   },
 });
@@ -305,9 +306,9 @@ export const receipt = query({
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const p = await ctx.db.get("payments", args.paymentId);
-    if (!p) fail("NOT_FOUND", "Receipt not found.");
+    if (!p) return null;
     const academy = await ctx.db.get("academies", p.academyId);
-    if (!academy) fail("NOT_FOUND", "Receipt not found.");
+    if (!academy) return null;
 
     let allowed = academy.ownerId === userId;
     if (!allowed) {
@@ -317,7 +318,7 @@ export const receipt = query({
         .first();
       allowed = m?.userId === userId;
     }
-    if (!allowed) fail("FORBIDDEN", "You can't view this receipt.");
+    if (!allowed) return null;
 
     const inv = await ctx.db.get("invoices", p.invoiceId);
     const student = await ctx.db.get("students", p.studentId);

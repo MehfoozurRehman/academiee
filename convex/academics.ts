@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
-import { audit, fail, ownedDoc, requireOwner } from "./lib/access";
+import { audit, findOwned, fail, ownedDoc, requireOwner } from "./lib/access";
 import { isRealDate, TIME_RE } from "./lib/dates";
 
 // Tests & results, and the weekly timetable.
@@ -111,7 +111,8 @@ export const getTest = query({
   args: { academyId: v.id("academies"), testId: v.id("tests") },
   handler: async (ctx, args) => {
     await requireOwner(ctx, args.academyId);
-    const test = await ownedDoc(ctx, "tests", args.testId, args.academyId);
+    const test = await findOwned(ctx, "tests", args.testId, args.academyId);
+    if (!test) return null;
     const batch = await ctx.db.get("batches", test.batchId);
     const students = await ctx.db
       .query("students")

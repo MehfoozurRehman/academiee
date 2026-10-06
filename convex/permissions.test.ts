@@ -117,7 +117,7 @@ describe("fees", () => {
     await a.mutation(api.fees.voidPayment, { academyId, paymentId, reason: "wrong amount" });
     await a.mutation(api.fees.voidInvoice, { academyId, invoiceId: inv, reason: "mistake" });
     const detail = await a.query(api.fees.getInvoice, { academyId, invoiceId: inv, today: "2026-10-07" });
-    expect(detail.invoice.status).toBe("voided");
+    expect(detail?.invoice.status).toBe("voided");
   });
 
   test("generateMonth twice creates no duplicates", async () => {
