@@ -1,27 +1,56 @@
-# Academiee
+# Welcome to your Expo app 👋
 
-Academy and tuition-centre management for Pakistan: owners run students, batches, fees, attendance, tests, timetable and notices; students sign in to see their own data; a super admin oversees all academies. One Expo codebase for web, iOS and Android, with a Convex backend. English and Urdu (right-to-left).
+This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-- Product and build plan: [docs/PLAN.md](docs/PLAN.md)
-- How screens are built: [docs/UI_GUIDE.md](docs/UI_GUIDE.md)
-- Working agreement: [CLAUDE.md](CLAUDE.md)
+## Get started
 
-## Run locally
+1. Install dependencies
+
+   ```bash
+   npm install
+   ```
+
+2. Start the app
+
+   ```bash
+   npx expo start
+   ```
+
+In the output, you'll find options to open the app in a
+
+- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
+- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+
+You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+
+## Get a fresh project
+
+When you're ready, run:
 
 ```bash
-pnpm install
-npx convex dev          # backend (dev deployment), keep running
-pnpm web                # web app on http://localhost:8082
+npm run reset-project
 ```
 
-Dev deployments set `ALLOW_DEV_CODES=true`, so sign-in codes are shown on screen and "Use test account" works. Load demo data for an owner with `npx convex run seed:demo '{"ownerEmail":"owner@test.academiee.app"}'`.
+This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
-## Checks
+### Other setup steps
 
-```bash
-pnpm typecheck && pnpm test
-```
+- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
+- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
+- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
 
-## Web build
+## Learn more
 
-`pnpm build:web` exports to `dist/` (with the Vercel asset fix) — deploy that folder to Vercel.
+To learn more about developing your project with Expo, look at the following resources:
+
+- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
+- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+
+## Join the community
+
+Join our community of developers creating universal apps.
+
+- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
+- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.

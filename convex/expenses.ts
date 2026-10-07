@@ -1,86 +1,109 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { audit, fail, ownedDoc, requireOwner } from "./lib/access";
-import { isRealDate, MONTH_RE, monthRange } from "./lib/dates";
 
-// Expenses are never deleted — they are voided with a reason.
-
-const CATEGORIES = ["rent", "salaries", "utilities", "supplies", "marketing", "maintenance", "other"];
-
-export const list = query({
-  args: { academyId: v.id("academies"), month: v.string() },
-  handler: async (ctx, args) => {
-    await requireOwner(ctx, args.academyId);
-    if (!MONTH_RE.test(args.month)) fail("INVALID", "Pick a month.");
-    const { from, to } = monthRange(args.month);
-    const rows = await ctx.db
-      .query("expenses")
-      .withIndex("by_academyId_and_date", (q) => q.eq("academyId", args.academyId).gte("date", from).lte("date", to))
-      .order("desc")
-      .take(1000);
-
-    const byCategory: Record<string, number> = {};
-    let total = 0;
-    for (const r of rows) {
-      if (r.voidedAt !== undefined) continue;
-      total += r.amount;
-      byCategory[r.category] = (byCategory[r.category] ?? 0) + r.amount;
-    }
-    return {
-      rows: rows.map((r) => ({
-        _id: r._id,
-        date: r.date,
-        category: r.category,
-        description: r.description,
-        amount: r.amount,
-        voided: r.voidedAt !== undefined,
-        voidReason: r.voidReason ?? null,
-      })),
-      total,
-      byCategory,
-    };
-  },
-});
-
-export const create = mutation({
+export const createExpense = mutation({
   args: {
     academyId: v.id("academies"),
     date: v.string(),
     category: v.string(),
     description: v.string(),
     amount: v.number(),
+    paidBy: v.string(),
+    paymentMethod: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const { userId } = await requireOwner(ctx, args.academyId);
-    if (!isRealDate(args.date)) fail("INVALID", "Pick the expense date.");
-    if (!CATEGORIES.includes(args.category)) fail("INVALID", "Pick a category.");
-    const description = args.description.trim();
-    if (description.length < 2 || description.length > 120) fail("INVALID", "Describe the expense in a few words.");
-    if (!Number.isInteger(args.amount) || args.amount <= 0 || args.amount > 100_000_000) {
-      fail("INVALID", "Amount must be a whole number above zero.");
-    }
-    const id = await ctx.db.insert("expenses", {
-      academyId: args.academyId,
-      date: args.date,
-      category: args.category,
-      description,
-      amount: args.amount,
+  async handler(ctx, args) {
+    const expenseId = await ctx.db.insert("expenses", {
+      ...args,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
     });
-    await audit(ctx, args.academyId, userId, "expense.created", `${args.category}: ${description} Rs ${args.amount}`);
-    return id;
+
+    return { expenseId, amount: args.amount };
   },
 });
 
-export const void_ = mutation({
-  args: { academyId: v.id("academies"), expenseId: v.id("expenses"), reason: v.string() },
-  handler: async (ctx, args) => {
-    const { userId } = await requireOwner(ctx, args.academyId);
-    const e = await ownedDoc(ctx, "expenses", args.expenseId, args.academyId);
-    if (e.voidedAt !== undefined) fail("INVALID", "This expense is already voided.");
-    const reason = args.reason.trim();
-    if (reason.length < 3 || reason.length > 200) fail("INVALID", "Give a short reason (at least 3 characters).");
-    await ctx.db.patch("expenses", e._id, { voidedAt: Date.now(), voidReason: reason });
-    await audit(ctx, args.academyId, userId, "expense.voided", `${e.description} Rs ${e.amount}: ${reason}`);
+export const listExpenses = query({
+  args: {
+    academyId: v.id("academies"),
+    category: v.optional(v.string()),
+    fromDate: v.optional(v.string()),
+    toDate: v.optional(v.string()),
+  },
+  async handler(ctx, args) {
+    const expenses = await ctx.db
+      .query("expenses")
+      .withIndex("by_academy_deleted", (q) =>
+        q.eq("academyId", args.academyId).eq("deletedAt", undefined)
+      )
+      .collect();
+
+    let rows = expenses;
+    if (args.category) rows = rows.filter((e) => e.category === args.category);
+    if (args.fromDate) rows = rows.filter((e) => e.date >= args.fromDate!);
+    if (args.toDate) rows = rows.filter((e) => e.date <= args.toDate!);
+
+    rows.sort((a, b) => b.date.localeCompare(a.date));
+
+    const total = rows.reduce((sum, e) => sum + e.amount, 0);
+
+    const byCategory: Record<string, number> = {};
+    for (const e of rows) {
+      byCategory[e.category] = (byCategory[e.category] ?? 0) + e.amount;
+    }
+
+    return {
+      total,
+      byCategory,
+      rows: rows.map((e) => ({
+        expenseId: e._id,
+        date: e.date,
+        category: e.category,
+        description: e.description,
+        amount: e.amount,
+        paidBy: e.paidBy,
+        paymentMethod: e.paymentMethod,
+      })),
+    };
   },
 });
-export { void_ as void };
+
+export const updateExpense = mutation({
+  args: {
+    expenseId: v.id("expenses"),
+    date: v.optional(v.string()),
+    category: v.optional(v.string()),
+    description: v.optional(v.string()),
+    amount: v.optional(v.number()),
+    paidBy: v.optional(v.string()),
+    paymentMethod: v.optional(v.string()),
+  },
+  async handler(ctx, args) {
+    const { expenseId, ...fields } = args;
+
+    const expense = await ctx.db.get(expenseId);
+    if (!expense) {
+      throw new Error("Expense not found");
+    }
+
+    const updates: Record<string, unknown> = { updatedAt: Date.now() };
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== undefined) updates[key] = value;
+    }
+
+    await ctx.db.patch(expenseId, updates);
+    return { expenseId };
+  },
+});
+
+export const deleteExpense = mutation({
+  args: { expenseId: v.id("expenses") },
+  async handler(ctx, args) {
+    const expense = await ctx.db.get(args.expenseId);
+    if (!expense || expense.deletedAt !== undefined) {
+      throw new Error("Expense not found");
+    }
+
+    await ctx.db.patch(args.expenseId, { deletedAt: Date.now() });
+    return { expenseId: args.expenseId };
+  },
+});
