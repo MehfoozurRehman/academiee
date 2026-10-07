@@ -1,5 +1,6 @@
 allowBuilds:
   esbuild: true
+  unrs-resolver: false
 overrides:
   expo-constants: ~57.0.19
 minimumReleaseAgeExclude:
