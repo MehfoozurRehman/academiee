@@ -64,7 +64,7 @@ Teachers & salaries, staff roles, parent login, push notifications, AI, custom d
 
 ## Status (2026-10-07)
 
-Phases 0–7 for **web** are built and tested in a browser (owner, student portal, super admin; English + Urdu; light + dark; phone + desktop widths). Live test build: https://academiee-rho.vercel.app (uses the Convex **dev** deployment and on-screen test codes — not for real data).
+Phases 0–7 for **web** are built and tested in a browser (owner, student portal, super admin; English + Urdu; light + dark; phone + desktop widths). Live test build: https://academy.schooliee.com (uses the Convex **dev** deployment and on-screen test codes — not for real data).
 
 Before going live for real:
 - Set up Resend (email codes) and a Convex **prod** deployment; build the web app against prod without `EXPO_PUBLIC_DEV_TOOLS`.
