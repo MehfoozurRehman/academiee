@@ -55,7 +55,11 @@ export const listTests = query({
           subject: t.subject ?? null,
           date: t.date,
           totalMarks: t.totalMarks,
-          resultCount: results.length,
+          // Only marks of students still active in this batch, so the count
+          // matches "entered / enrolled" on screen.
+          resultCount: (
+            await Promise.all(results.map((r) => ctx.db.get("students", r.studentId)))
+          ).filter((st) => st && st.status === "active" && st.batchId === t.batchId).length,
         };
       })
     );
