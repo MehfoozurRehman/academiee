@@ -1,6 +1,6 @@
 # Academiee
 
-Academiee is a simple, beautiful management app for coaching academies and tuition centres in Pakistan. Owners run students, batches, fees, attendance, tests, the timetable and notices; students log in to see their own classes, fees, attendance and results. Package / bundle ID: `com.academiee.app`. Web app: `*.vercel.app` (no custom domain yet).
+Academiee is a simple, beautiful management app for coaching academies and tuition centres in Pakistan. Owners run students, batches, fees, attendance, tests, the timetable and notices; students log in to see their own classes, fees, attendance and results. Package / bundle ID: `com.academiee.app`. Web app: https://academy.schooliee.com (Vercel project `academiee` on the devscotsolutions team; `schooliee.com` DNS is managed in Vercel).
 
 Feature reference (old app's functionality and its known flaws): [docs/FEATURE_REFERENCE.md](docs/FEATURE_REFERENCE.md). The current build plan lives in [docs/PLAN.md](docs/PLAN.md).
 
