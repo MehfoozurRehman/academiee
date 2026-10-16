@@ -50,7 +50,7 @@
     "vitest": "^5.0.3"
   },
   "scripts": {
-    "start": "node api.js && expo start --port 8082",
+    "start": "expo start --port 8082",
     "web": "expo start --web --port 8082",
     "android": "expo run:android",
     "ios": "expo run:ios",
