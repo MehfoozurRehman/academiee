@@ -21,6 +21,7 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
+temp_auto_push.bat
 # debug
 npm-debug.*
 yarn-debug.*
@@ -45,3 +46,4 @@ example
 # secrets
 secrets/
 .gitignore
+branch_structure.json
