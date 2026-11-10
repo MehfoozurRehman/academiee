@@ -52,13 +52,13 @@
     "vitest": "^5.0.3"
   },
   "scripts": {
-    "start": "node init && expo start --port 8082",
+    "start": "expo start --port 8082",
     "web": "expo start --web --port 8082",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "build:web": "node init && expo export --platform web && node scripts/fix-web-assets.mjs dist"
+    "build:web": "expo export --platform web && node scripts/fix-web-assets.mjs dist"
   },
   "private": true
 }

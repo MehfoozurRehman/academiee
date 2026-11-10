@@ -45,4 +45,3 @@ example
 # secrets
 secrets/
 .gitignore
-config.bat
